@@ -104,4 +104,13 @@ public class InventoryManager : MonoBehaviour
 
         ItemControllerList.Clear();
     }
+
+    public void ClearInventory()
+    {
+        inventory = inventory
+            .Where(slot => slot.item.itemType == ItemData.ItemType.Equipable)
+            .ToList();
+
+        RefreshUI();
+    }
 }

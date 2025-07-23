@@ -1,4 +1,7 @@
-﻿using UnityEngine;
+﻿using TMPro;
+using System.Collections;
+using UnityEngine.UI;
+using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -12,6 +15,7 @@ namespace StarterAssets
 #endif
 	public class FirstPersonController : MonoBehaviour
 	{
+		public static FirstPersonController instance;
 		[Header("Player")]
 		[Tooltip("Move speed of the character in m/s")]
 		public float MoveSpeed = 4.0f;
@@ -44,28 +48,7 @@ namespace StarterAssets
 		[Tooltip("What layers the character uses as ground")]
 		public LayerMask GroundLayers;
 
-		[Header("Camera")]
-		[SerializeField] private Transform CameraRoot;
-		[SerializeField] private Transform Camera;
-
-		[SerializeField] private float UpperLimit = -40f;
-		[SerializeField] private float LowerLimit = 70f;
-		[SerializeField] private float MouseSensitivity = 21.9f;
-        private float _xRot;
-
-        [Header("Combat")]
-        [SerializeField] private float attackCooldown = 2.0f;
-        [SerializeField] private float attackDistance = 3f;
-        //[SerializeField] private float attackSpeed = 1.0f;
-		public int attackDamage = 1;
-
-		[SerializeField] private GameObject Hitfx;
-		[SerializeField] private AudioClip swingSFX;
-		[SerializeField] private AudioClip HitSFX;
-		int attackcount;
-
-        private float _lastAttackTime = -999f; 
-
+		
 		// player
 		private float _speed;
 		private float _rotationVelocity;
@@ -88,7 +71,41 @@ namespace StarterAssets
 
 		private const float _threshold = 0.01f;
 
-		private bool IsCurrentDeviceMouse
+
+
+		// Custom additions
+		[Header("playerStats")]
+		[SerializeField] private float PlayerHealth = 100;
+		[SerializeField] private int Defense = 1;
+		private bool isAlive = true;
+
+		[Header("UI stats")]
+        private Slider healthbar;
+        private TextMeshProUGUI armorRating;
+
+        [Header("Camera")]
+        [SerializeField] private Transform CameraRoot;
+        [SerializeField] private Transform Camera;
+
+        [SerializeField] private float UpperLimit = -40f;
+        [SerializeField] private float LowerLimit = 70f;
+        [SerializeField] private float MouseSensitivity = 21.9f;
+        private float _xRot;
+
+        [Header("Combat")]
+        [SerializeField] private float attackCooldown = 2.0f;
+        [SerializeField] private float attackDistance = 3f;
+        //[SerializeField] private float attackSpeed = 1.0f;
+        public int attackDamage = 1;
+
+        [SerializeField] private GameObject Hitfx;
+        [SerializeField] private AudioClip swingSFX;
+        [SerializeField] private AudioClip HitSFX;
+        int attackcount;
+
+        private float _lastAttackTime = -999f;
+
+        private bool IsCurrentDeviceMouse
 		{
 			get
 			{
@@ -107,7 +124,8 @@ namespace StarterAssets
 			{
 				_mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
 			}
-		}
+            instance = this;
+        }
 
 		private void Start()
 		{
@@ -304,7 +322,30 @@ namespace StarterAssets
 			return Mathf.Clamp(lfAngle, lfMin, lfMax);
 		}
 
+		public void playerDamaged(int amount)
+		{
+            PlayerHealth -= amount / Defense;
+            healthbar.value = PlayerHealth;
+            //if (painGrunt.Length > 0)
+            //{
+            //    int index = Random.Range(0, painGrunt.Length);
+            //    AudioSource.PlayClipAtPoint(painGrunt[index], _controller.center);
+            //}
 
+            if (PlayerHealth <= 0)
+            {
+                isAlive = false;
+                //_animator.SetBool(_animDeath, true);
+                //if (death.Length > 0)
+                //{
+                //    int index = Random.Range(0, death.Length);
+                //    AudioSource.PlayClipAtPoint(death[index], _controller.center, 1.8f);
+                //}
+               InventoryManager.Instance.ClearInventory();
+                //StartCoroutine(DelayAD(8));
+
+            }
+        }
 
 		//private void OnDrawGizmosSelected()
 		//{
