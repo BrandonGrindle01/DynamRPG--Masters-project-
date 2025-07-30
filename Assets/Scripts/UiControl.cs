@@ -1,3 +1,4 @@
+using StarterAssets;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,7 +9,8 @@ public class UiControl : MonoBehaviour
     public void CloseInv()
     {
         Inventory.SetActive(false);
-        InventoryManager.Instance.ClearList();
+        //InventoryManager.Instance.ClearList();
+        FirstPersonController.instance.isInventoryOpen = false;
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }

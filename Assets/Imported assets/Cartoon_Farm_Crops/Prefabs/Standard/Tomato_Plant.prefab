@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33000011116815182}
   - component: {fileID: 23000012463200030}
   - component: {fileID: 64000012622771260}
+  - component: {fileID: 8409797084628251967}
   m_Layer: 0
   m_Name: Tomato_Plant
   m_TagString: Untagged
@@ -109,3 +110,20 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300010, guid: b69b26c8b73b8bd49bf243bbe541a2e0, type: 3}
+--- !u!114 &8409797084628251967
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000013832410636}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db39f8c666b2f44a81f4f2f50d6f8e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: ed8ec13bed78bb644a2928e61ab6771c, type: 2}
+  amount: 1
+  isOwned: 1
+  ownerName: farmer joel
+  wasStolen: 0

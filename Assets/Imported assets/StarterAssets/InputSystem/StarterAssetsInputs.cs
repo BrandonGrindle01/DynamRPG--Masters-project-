@@ -13,6 +13,8 @@ namespace StarterAssets
 		public bool jump;
 		public bool sprint;
 		public bool attack;
+		public bool openInventory;
+		public bool interact;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
@@ -48,6 +50,15 @@ namespace StarterAssets
         {
             AttackInput(value.isPressed);
         }
+		public void OnOpenInv(InputValue value)
+		{
+			openInventory = value.isPressed;
+		}
+		public void OnInteract(InputValue value)
+		{
+			interact = value.isPressed;
+		}
+			
 #endif
 
 
@@ -74,6 +85,16 @@ namespace StarterAssets
 		public void AttackInput(bool newAttackState)
 		{
 			attack = newAttackState;
+		}
+
+		public void InventoryInput(bool newOpenInv)
+		{
+			openInventory = newOpenInv;
+		}
+
+		public void InteractInput(bool newInteract)
+		{
+			interact = newInteract;
 		}
 		private void OnApplicationFocus(bool hasFocus)
 		{

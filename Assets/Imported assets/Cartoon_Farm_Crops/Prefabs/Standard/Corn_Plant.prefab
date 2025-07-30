@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 33000011654929274}
   - component: {fileID: 23000010765629750}
   - component: {fileID: 64000011284429378}
+  - component: {fileID: 7145483336760749608}
   m_Layer: 0
   m_Name: Corn_Plant
   m_TagString: Untagged
@@ -109,3 +110,20 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 4300012, guid: b69b26c8b73b8bd49bf243bbe541a2e0, type: 3}
+--- !u!114 &7145483336760749608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1000012235373026}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7db39f8c666b2f44a81f4f2f50d6f8e6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  itemData: {fileID: 11400000, guid: 21dfaeceb8a1ad142ae2f052e80bcc28, type: 2}
+  amount: 1
+  isOwned: 1
+  ownerName: Farmer Joel
+  wasStolen: 0

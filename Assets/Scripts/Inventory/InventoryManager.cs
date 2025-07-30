@@ -21,22 +21,47 @@ public class InventoryManager : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+
+        RefreshUI();
     }
 
     public void AddItem(ItemData item, int amount = 1)
     {
+        if (item == null)
+        {
+            Debug.LogWarning("Tried to add a null item to inventory!");
+            return;
+        }
+
         if (item.stackable)
         {
-            InventorySlot existingSlot = inventory.FirstOrDefault(i => i.item == item);
-            if (existingSlot != null)
+            int remainingAmount = amount;
+            foreach (InventorySlot slot in inventory.Where(s => s.item == item && s.quantity < item.maxStack))
             {
-                existingSlot.quantity = Mathf.Min(existingSlot.quantity + amount, item.maxStack);
-                RefreshUI();
-                return;
+                int spaceLeft = item.maxStack - slot.quantity;
+                int addAmount = Mathf.Min(spaceLeft, remainingAmount);
+
+                slot.quantity += addAmount;
+                remainingAmount -= addAmount;
+
+                if (remainingAmount <= 0)
+                    break;
+            }
+            while (remainingAmount > 0)
+            {
+                int stackAmount = Mathf.Min(remainingAmount, item.maxStack);
+                inventory.Add(new InventorySlot(item, stackAmount));
+                remainingAmount -= stackAmount;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < amount; i++)
+            {
+                inventory.Add(new InventorySlot(item, 1));
             }
         }
 
-        inventory.Add(new InventorySlot(item, amount));
         RefreshUI();
     }
 
@@ -67,29 +92,35 @@ public class InventoryManager : MonoBehaviour
         foreach (var slot in inventory)
         {
             GameObject obj = Instantiate(ItemContainer, ItemContent);
-            var itemName = obj.transform.Find("ItemName").GetComponent<TextMeshProUGUI>();
-            var itemIcon = obj.transform.Find("ItemIcon").GetComponent<Image>();
-            var itemQuantity = obj.transform.Find("Quantity")?.GetComponent<TextMeshProUGUI>();
-
+            var itemName = obj.transform.Find("Itm_name").GetComponent<TextMeshProUGUI>();
+            var itemIcon = obj.transform.Find("Itm_icon").GetComponent<Image>();
+            var quantity_tab = obj.transform.Find("Itm_quantity")?.gameObject;
+            var itemQuantity = obj.transform.Find("Itm_quantity").GetComponentInChildren<TextMeshProUGUI>();
+            if(itemQuantity == null)
+            {
+                Debug.Log("summing aint right here");
+            }
             itemName.text = slot.item.itemName;
             itemIcon.sprite = slot.item.itemSprite;
 
             if (slot.item.stackable && slot.quantity > 1 && slot.item.itemType != ItemData.ItemType.Equipable)
             {
-                itemQuantity.text = slot.quantity.ToString();
+                //itemQuantity.text = slot.quantity.ToString();
                 itemQuantity.gameObject.SetActive(true);
+                quantity_tab.gameObject.SetActive(true);
             }
             else if (itemQuantity != null)
             {
-                itemQuantity.text = "";
+                //itemQuantity.text = "";
                 itemQuantity.gameObject.SetActive(false);
+                quantity_tab.gameObject.SetActive(false);
             }
 
             // Assign to UI controller
             ItemController controller = obj.GetComponent<ItemController>();
             if (controller != null)
             {
-                controller.addItem(slot.item);
+                controller.addItem(slot);
                 ItemControllerList.Add(controller);
             }
         }

@@ -79,8 +79,19 @@ namespace StarterAssets
 		[SerializeField] private int Defense = 1;
 		private bool isAlive = true;
 
-		[Header("UI stats")]
+        [SerializeField] private float PlayerStamina = 100f;
+        [SerializeField] private float MaxStamina = 100f; 
+        [SerializeField] private float StaminaDrainRate = 15f; 
+        [SerializeField] private float StaminaRegenRate = 10f; 
+        private bool isSprinting = false;
+
+        [SerializeField] private float StaminaCooldownDuration = 2f; 
+        private bool staminaExhausted = false;
+        private float staminaCooldownTimer = 0f;
+
+        [Header("UI stats")]
         private Slider healthbar;
+        private Slider staminaSlider; 
         private TextMeshProUGUI armorRating;
 
         [Header("Camera")]
@@ -104,6 +115,10 @@ namespace StarterAssets
         int attackcount;
 
         private float _lastAttackTime = -999f;
+
+        [Header("Inventory UI")]
+        [SerializeField] private GameObject inventoryUI;
+        public bool isInventoryOpen = false;
 
         private bool IsCurrentDeviceMouse
 		{
@@ -137,6 +152,14 @@ namespace StarterAssets
 			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
 #endif
 
+			healthbar = GameObject.Find("HealthBar")?.GetComponent<Slider>();
+            healthbar.maxValue = PlayerHealth; 
+            healthbar.value = PlayerHealth; 
+            
+            staminaSlider = GameObject.Find("Sprint")?.GetComponent <Slider>();
+            staminaSlider.maxValue = MaxStamina;
+            staminaSlider.value = PlayerStamina;
+
             _animator = GetComponentInChildren<Animator>();
 			_audioSource = GetComponent<AudioSource>();
             _jumpTimeoutDelta = JumpTimeout;
@@ -149,14 +172,61 @@ namespace StarterAssets
 			GroundedCheck();
 			Move();
 			Attack();
+            UpdateUI();
+            if (_input.openInventory)
+            {
+                ToggleInventory();
+				Debug.Log("!toggling inventory");
+                _input.openInventory = false;
+            }
+
+            if (_input.interact)
+            {
+                TryPickupItem();
+                _input.interact = false;
+            }
         }
 
-		private void LateUpdate()
+        private void UpdateUI()
+        {
+            healthbar.value = PlayerHealth;
+            staminaSlider.value = PlayerStamina;
+        }
+
+        private void LateUpdate()
 		{
 			CameraMovement();
 		}
 
-		private void GroundedCheck()
+        private void ToggleInventory()
+        {
+            isInventoryOpen = !isInventoryOpen;
+            inventoryUI.SetActive(isInventoryOpen);
+            _input.cursorLocked = !isInventoryOpen;
+            Cursor.lockState = isInventoryOpen ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = isInventoryOpen;
+        }
+
+        private void TryPickupItem()
+        {
+            Ray ray = new Ray(Camera.position, Camera.forward);
+            if (Physics.Raycast(ray, out RaycastHit hit, 3f))
+            {
+                var pickup = hit.collider.GetComponent<ItemCollection>();
+                if (pickup != null)
+                {
+                    if (pickup.isOwned && !pickup.wasStolen)
+                    {
+                        pickup.MarkAsStolen();
+                        // Optional: notify crime system here
+                    }
+                    InventoryManager.Instance.AddItem(pickup.itemData, pickup.amount);
+                    Destroy(hit.collider.gameObject);
+                }
+            }
+        }
+
+        private void GroundedCheck()
 		{
 			// set sphere position, with offset
 			Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
@@ -180,14 +250,47 @@ namespace StarterAssets
 
 		private void Move()
 		{
-			// set target speed based on move speed, sprint speed and if sprint is pressed
-			float targetSpeed = _input.sprint ? SprintSpeed : MoveSpeed;
 
-			// a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
+            // handle stamina cooldown timer
+            if (staminaExhausted)
+            {
+                staminaCooldownTimer -= Time.deltaTime;
+                if (staminaCooldownTimer <= 0f && PlayerStamina > 10f) 
+                {
+                    staminaExhausted = false;
+                }
+            }
 
-			// note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-			// if there is no input, set the target speed to 0
-			if (_input.move == Vector2.zero) targetSpeed = 0.0f;
+            // Handle stamina logic before speed calc
+            bool wantsToSprint = _input.sprint && !staminaExhausted && PlayerStamina > 0 && _input.move != Vector2.zero;
+            isSprinting = wantsToSprint;
+
+            // Sprint is only allowed if stamina > 0
+            float targetSpeed = isSprinting ? SprintSpeed : MoveSpeed;
+            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
+            // custom stamina logic.
+            if (isSprinting)
+            {
+                PlayerStamina -= StaminaDrainRate * Time.deltaTime;
+                if (PlayerStamina <= 0f)
+                {
+                    PlayerStamina = 0f;
+                    staminaExhausted = true;
+                    staminaCooldownTimer = StaminaCooldownDuration;
+                    isSprinting = false;
+                }
+            }
+            else
+            {
+                PlayerStamina += StaminaRegenRate * Time.deltaTime;
+                if (PlayerStamina > MaxStamina)
+                    PlayerStamina = MaxStamina;
+            }
+
+            staminaSlider.value = PlayerStamina; 
+            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
+            // if there is no input, set the target speed to 0
+            if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
 			// a reference to the players current horizontal velocity
 			float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;

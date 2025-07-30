@@ -1,3 +1,4 @@
+using StarterAssets;
 using UnityEngine;
 
 [RequireComponent(typeof(CharacterController))]
@@ -16,14 +17,19 @@ public class FP_immersive : MonoBehaviour
     private CharacterController controller;
     private float defaultY;
     private float footstepTimer;
+    private StarterAssetsInputs input;
 
     void Start()
     {
         controller = GetComponent<CharacterController>();
+        input = GetComponent<StarterAssetsInputs>();
+
         if (cameraTransform != null)
         {
             defaultY = cameraTransform.localPosition.y;
         }
+
+       
     }
 
     void Update()
