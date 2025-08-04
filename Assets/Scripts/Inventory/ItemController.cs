@@ -2,6 +2,7 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using StarterAssets;
 
 public class ItemController : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
@@ -53,35 +54,59 @@ public class ItemController : MonoBehaviour, IPointerEnterHandler, IPointerExitH
     public void OnClick()
     {
         switch (itemData.itemType)
-        {   
+        {
+            case ItemData.ItemType.Equipable:
+                bool alreadyEquipped = InventoryManager.Instance.IsEquipped(itemData);
+
+                if (alreadyEquipped)
+                {
+                    InventoryManager.Instance.UnequipItem(itemData.equipSlot);
+                    slot.isEquipped = false;
+                }
+                else
+                {
+                    bool slotOccupied = InventoryManager.Instance.IsSlotOccupied(itemData.equipSlot);
+
+                    if (!slotOccupied)
+                    {
+                        InventoryManager.Instance.EquipItem(itemData);
+                        slot.isEquipped = true;
+                    }
+                    else
+                    {
+                        Debug.Log("Can't equip — slot already occupied.");
+                        slot.isEquipped = false;
+                    }
+                }
+
+                InventoryManager.Instance.RefreshUI();
+                break;
+
             case ItemData.ItemType.Consumable:
-                //PlayerStats.Instance.Heal(itemData.healAmount);
-                Debug.Log("consuming for " + itemData.healAmount + " hp");
+                FirstPersonController.instance.Heal(itemData.healAmount);
                 InventoryManager.Instance.RemoveItem(itemData, 1);
                 break;
 
-            case ItemData.ItemType.Equipable:
-                slot.isEquipped = !slot.isEquipped;
-                Debug.Log("is equipt? = " + slot.isEquipped);
-                UpdateBackgroundColor();
-                //EquipmentManager.Instance.Equip(itemData);
+            case ItemData.ItemType.Quest:
+                Debug.Log("Quest item — cannot be used.");
                 break;
 
-            case ItemData.ItemType.Quest:
-                Debug.Log("Quest item — can't be used.");
+            case ItemData.ItemType.Tool:
+                break;
+            case ItemData.ItemType.Material:
+                Debug.Log($"Item '{itemData.itemName}' is of type '{itemData.itemType}' and currently has no use on click.");
                 break;
 
             default:
-                Debug.Log("Unhandled item type.");
+                Debug.LogWarning("Unhandled item type.");
                 break;
         }
-
-        InventoryManager.Instance.RefreshUI();
     }
+
 
     private void UpdateBackgroundColor()
     {
-        Debug.Log(slot.isEquipped);
+        //Debug.Log(slot.isEquipped);
         backgroundImage.color = slot.isEquipped ? equippedColor : normalColor;
     }
 }

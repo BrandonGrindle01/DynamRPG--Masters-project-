@@ -20,3 +20,6 @@ MonoBehaviour:
   stackable: 0
   maxStack: 1
   healAmount: 0
+  equipSlot: 0
+  damage: 10
+  armorBonus: 0

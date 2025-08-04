@@ -3,6 +3,8 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using System.Linq;
+using StarterAssets;
+using static ItemData;
 
 public class InventoryManager : MonoBehaviour
 {
@@ -10,12 +12,17 @@ public class InventoryManager : MonoBehaviour
 
     [Header("Inventory")]
     public List<InventorySlot> inventory = new List<InventorySlot>();
+    private Dictionary<ItemData.EquipmentSlot, ItemData> equippedItems = new();
+
+    private GameObject currentWeaponObject;
+    private GameObject[] currentArmorObjects = new GameObject[4];
 
     [Header("UI")]
     public Transform ItemContent;
     public GameObject ItemContainer;
 
     [HideInInspector] public List<ItemController> ItemControllerList = new List<ItemController>();
+
 
     private void Awake()
     {
@@ -80,9 +87,82 @@ public class InventoryManager : MonoBehaviour
         }
     }
 
+    public bool IsEquipped(ItemData item) =>
+    equippedItems.ContainsKey(item.equipSlot) && equippedItems[item.equipSlot] == item;
+
+    public void EquipItem(ItemData item)
+    {
+        if (item == null || item.itemType != ItemData.ItemType.Equipable)
+            return;
+
+        // Check if something is already equipped in this slot
+        if (equippedItems.TryGetValue(item.equipSlot, out var existingItem))
+        {
+            // Already equipped — do nothing if it's not the same item
+            if (existingItem != item)
+            {
+                Debug.Log("Slot already occupied. Unequip first to equip a new item.");
+                return;
+            }
+        }
+
+        // Equip the item
+        equippedItems[item.equipSlot] = item;
+        FirstPersonController.instance.ApplyEquipStats(item);
+
+        if (item.worldPrefab != null)
+        {
+            if (item.equipSlot == EquipmentSlot.Weapon)
+            {
+                EquipVisual(ref currentWeaponObject, item.worldPrefab, FirstPersonController.instance.weaponHolder);
+            }
+            else
+            {
+                int index = (int)item.equipSlot - 1;
+                if (index >= 0 && index < FirstPersonController.instance.armorHolder.Length)
+                {
+                    EquipVisual(ref currentArmorObjects[index], item.worldPrefab, FirstPersonController.instance.armorHolder[index]);
+                }
+            }
+        }
+    }
+
+    private void EquipVisual(ref GameObject currentObj, GameObject prefab, Transform holder)
+    {
+        if (currentObj != null)
+            Destroy(currentObj);
+
+        currentObj = Instantiate(prefab, holder);
+    }
+
+    public void UnequipItem(EquipmentSlot slot)
+    {
+        equippedItems.Remove(slot);
+
+        if (slot == EquipmentSlot.Weapon)
+        {
+            Destroy(currentWeaponObject);
+            currentWeaponObject = null;
+        }
+        else
+        {
+            int index = (int)slot - 1;
+            if (index >= 0 && index < currentArmorObjects.Length)
+            {
+                Destroy(currentArmorObjects[index]);
+                currentArmorObjects[index] = null;
+            }
+        }
+    }
+
     public bool HasQuestItem(ItemData.ItemType type)
     {
         return inventory.Any(slot => slot.item.itemType == type);
+    }
+
+    public bool IsSlotOccupied(ItemData.EquipmentSlot slot)
+    {
+        return equippedItems.ContainsKey(slot);
     }
 
     public void RefreshUI()

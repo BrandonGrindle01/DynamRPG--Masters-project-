@@ -8,11 +8,12 @@ using System.Text.RegularExpressions;
 
 public class NPCBehaviour : MonoBehaviour
 {
+    [Header("General NPC Stats")]
     public ItemData item;
     public Collider MainCol;
     public Animator animator;
-    public int SpeedID;
 
+    [Header("NPC Navigation")]
     [SerializeField] private NavMeshAgent agent;
 
     [SerializeField] private Vector3 walkPoint;
@@ -20,6 +21,17 @@ public class NPCBehaviour : MonoBehaviour
     [SerializeField] private float walkrange;
     [SerializeField] private LayerMask GroundQuery;
 
+    [Header("NPC Spawner logic")]
+    private NPCSpawnPoint spawner;
+    private bool isReturningHome = false;
+
+    [SerializeField] private Vector3 homePosition;
+    [SerializeField] private List<Transform> stallPoints = new();
+    [SerializeField] private float loiterDuration = 5f;
+    private bool isLoitering = false;
+    private float loiterTimer = 0f;
+
+    [Header("NPC Dialogue")]
     public AudioSource source;
     public AudioClip[] genericResponce;
 
@@ -37,8 +49,23 @@ public class NPCBehaviour : MonoBehaviour
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
 
-        SpeedID = Animator.StringToHash("MoveSpeed");
+    }
 
+    public void SetHome(Vector3 home)
+    {
+        homePosition = home;
+
+    }
+    public void AssignSpawner(NPCSpawnPoint npcSpawner)
+    {
+        spawner = npcSpawner;
+    }
+
+    public void GoHome()
+    {
+        isReturningHome = true;
+        walkPoint = homePosition;
+        walkpointSet = true;
     }
 
     private void Update()
@@ -53,7 +80,19 @@ public class NPCBehaviour : MonoBehaviour
 
     private void patrol()
     {
-        if (!walkpointSet) { SearchWalkPoint(); }
+        if (isLoitering)
+        {
+            loiterTimer -= Time.deltaTime;
+            if (loiterTimer <= 0f)
+            {
+                isLoitering = false;
+                walkpointSet = false;
+            }
+            animator.SetFloat("MoveSpeed", 0f);
+            return;
+        }
+
+        if (!walkpointSet) SearchWalkPoint();
 
         if (walkpointSet)
         {
@@ -66,37 +105,58 @@ public class NPCBehaviour : MonoBehaviour
             }
             else if (disttoWP.magnitude < 1f)
             {
-                walkpointSet = false;
+                if (isReturningHome)
+                {
+                    spawner?.OnNPCReturnedHome(this.gameObject);
+                    Destroy(this.gameObject);
+                    return;
+                }
+
+                isLoitering = true;
+                loiterTimer = Random.Range(loiterDuration / 2f, loiterDuration * 1.5f);
+                transform.LookAt(walkPoint + (walkPoint - transform.position).normalized);
             }
 
-            animator.SetFloat(SpeedID, agent.velocity.magnitude);
+            animator.SetFloat("MoveSpeed", agent.velocity.magnitude);
         }
         else
         {
-            animator.SetFloat(SpeedID, 0f);
+            animator.SetFloat("MoveSpeed", 0f);
         }
     }
 
     private void SearchWalkPoint()
     {
-        float randomZ = Random.Range(-walkrange, walkrange);
-        float randomX = Random.Range(-walkrange, walkrange);
         NavMeshHit hit;
-        int attempts = 10;
-        while (attempts > 0)
-        {
-            randomZ = Random.Range(-walkrange, walkrange);
-            randomX = Random.Range(-walkrange, walkrange);
 
-            Vector3 randomPoint = new Vector3(transform.position.x + randomX, transform.position.y, transform.position.z + randomZ);
+        if (homePosition != Vector3.zero && Random.value < 0.3f)
+        {
+            if (NavMesh.SamplePosition(homePosition, out hit, 2f, NavMesh.AllAreas))
+            {
+                walkPoint = hit.position;
+                walkpointSet = true;
+                return;
+            }
+        }
+        //if (stallPoints.Count > 0 && Random.value < 0.5f)
+        //{
+        //    Transform randomStall = stallPoints[Random.Range(0, stallPoints.Count)];
+        //    if (randomStall != null && NavMesh.SamplePosition(randomStall.position, out hit, 2f, NavMesh.AllAreas))
+        //    {
+        //        walkPoint = hit.position;
+        //        walkpointSet = true;
+        //        return;
+        //    }
+        //}
+        for (int i = 0; i < 10; i++)
+        {
+            Vector3 randomPoint = transform.position + new Vector3(Random.Range(-walkrange, walkrange), 0, Random.Range(-walkrange, walkrange));
             if (NavMesh.SamplePosition(randomPoint, out hit, walkrange, NavMesh.AllAreas))
             {
                 walkPoint = hit.position;
                 walkpointSet = true;
                 return;
             }
-
-            attempts--;
         }
     }
 

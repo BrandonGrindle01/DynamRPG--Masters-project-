@@ -2,6 +2,8 @@
 using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
+using System.Collections.Generic;
+
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -76,7 +78,8 @@ namespace StarterAssets
 		// Custom additions
 		[Header("playerStats")]
 		[SerializeField] private float PlayerHealth = 100;
-		[SerializeField] private int Defense = 1;
+        [SerializeField] private float MaxHealth = 100f;
+        [SerializeField] private int Defense = 1;
 		private bool isAlive = true;
 
         [SerializeField] private float PlayerStamina = 100f;
@@ -119,6 +122,13 @@ namespace StarterAssets
         [Header("Inventory UI")]
         [SerializeField] private GameObject inventoryUI;
         public bool isInventoryOpen = false;
+
+
+		[Header("equipment manager")]
+        private Dictionary<ItemData.EquipmentSlot, ItemData> equippedItems = new();
+        public Transform weaponHolder;
+        public Transform[] armorHolder = new Transform[4];
+
 
         private bool IsCurrentDeviceMouse
 		{
@@ -185,6 +195,11 @@ namespace StarterAssets
                 TryPickupItem();
                 _input.interact = false;
             }
+
+            if (PlayerHealth > MaxHealth)
+                PlayerHealth = MaxHealth;
+
+            healthbar.maxValue = MaxHealth;
         }
 
         private void UpdateUI()
@@ -337,13 +352,22 @@ namespace StarterAssets
         {
             if (_animator == null) return;
 
+            if (!equippedItems.TryGetValue(ItemData.EquipmentSlot.Weapon, out ItemData weaponItem))
+            {
+                _input.attack = false;
+                return;
+            }
+            if (weaponItem.itemName != "Sword")
+            {
+                Debug.Log("You need to equip a sword to attack.");
+                _input.attack = false;
+                return;
+            }
+
             if (_input.attack && Time.time >= _lastAttackTime + attackCooldown)
             {
                 Debug.Log("attacking");
-				_animator.SetTrigger("Attack");
-
-				_audioSource.pitch = Random.Range(0.9f, 1.1f);
-				_audioSource.PlayOneShot(swingSFX);
+                _animator.SetTrigger("Attack");
 
                 Ray ray = new Ray(Camera.position, Camera.forward);
 
@@ -351,18 +375,21 @@ namespace StarterAssets
                 {
                     Debug.Log("Hit object: " + hit.collider.name);
 
-     //               if (hit.collider.CompareTag("Enemy"))
-     //               {
-					//	// Optional: check for script
-					//	var enemy = hit.collider.GetComponent<EnemyController>();
-					//	if (enemy != null)
-					//	{
-					//		enemy.TakeDamage(10);
-					//	}
-					//}
+                    EnemyBehavior enemy = hit.collider.GetComponent<EnemyBehavior>();
+                    if (enemy != null)
+                    {
+                        enemy.TakeDamage(attackDamage);
+
+                        if (Hitfx != null)
+                            Instantiate(Hitfx, hit.point, Quaternion.identity);
+
+                        if (HitSFX != null)
+                            _audioSource.PlayOneShot(HitSFX);
+                    }
                 }
-                _lastAttackTime = Time.time; 
-                _input.attack = false;       
+
+                _lastAttackTime = Time.time;
+                _input.attack = false;
             }
             else if (_input.attack)
             {
@@ -450,16 +477,45 @@ namespace StarterAssets
             }
         }
 
-		//private void OnDrawGizmosSelected()
-		//{
-		//	Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
-		//	Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+        public void ApplyEquipStats(ItemData item)
+        {
+            attackDamage += item.damage;
+            Defense += item.armorBonus;
+        }
 
-		//	if (Grounded) Gizmos.color = transparentGreen;
-		//	else Gizmos.color = transparentRed;
+        public void RemoveEquipStats(ItemData item)
+        {
+            attackDamage -= item.damage;
+            Defense -= item.armorBonus;
+        }
 
-		//	// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-		//	Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
-		//}
-	}
+        public void Heal(float amount)
+        {
+            if (!isAlive) return;
+
+            PlayerHealth += amount;
+
+            // Clamp to max value if you have a max health (optional)
+            if (PlayerHealth > healthbar.maxValue)
+                PlayerHealth = healthbar.maxValue;
+
+            // Update the UI
+            healthbar.value = PlayerHealth;
+
+            // Optionally, you can add visual/audio feedback here
+            Debug.Log("Healed for " + amount + ", current health: " + PlayerHealth);
+        }
+
+        //private void OnDrawGizmosSelected()
+        //{
+        //	Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
+        //	Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
+
+        //	if (Grounded) Gizmos.color = transparentGreen;
+        //	else Gizmos.color = transparentRed;
+
+        //	// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
+        //	Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
+        //}
+    }
 }

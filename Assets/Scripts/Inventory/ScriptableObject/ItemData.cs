@@ -15,6 +15,12 @@ public class ItemData : ScriptableObject
 
     public int healAmount;
 
+    [Header("equipment only")]
+    public EquipmentSlot equipSlot;
+    public int damage;
+    public int armorBonus;
+
     public enum ItemType { Consumable, Equipable, Quest, Tool, Material }
+    public enum EquipmentSlot { Weapon, Helmet, Chestplate, Leggings, Boots }
 }
 
