@@ -6,12 +6,28 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem.XR;
 using System.Text.RegularExpressions;
 
+[System.Serializable]
+public class LootDrop
+{
+    public ItemData item;
+    [Range(0f, 1f)] public float dropChance = 0.2f;
+}
+
 public class NPCBehaviour : MonoBehaviour
 {
     [Header("General NPC Stats")]
-    public ItemData item;
     public Collider MainCol;
     public Animator animator;
+
+    [Header("NPC Health")]
+    [SerializeField] private float health = 50f;
+    [SerializeField] private GameObject deathEffect;
+    private bool isDead = false;
+
+    [Header("Death Drops")]
+    [SerializeField] private int minGoldDrop = 5;
+    [SerializeField] private int maxGoldDrop = 20;
+    [SerializeField] private List<LootDrop> possibleDrops = new();
 
     [Header("NPC Navigation")]
     [SerializeField] private NavMeshAgent agent;
@@ -38,6 +54,10 @@ public class NPCBehaviour : MonoBehaviour
     [SerializeField] private int SpeechIntervalMin, SpeechIntervalMax;
     bool playingAudio = false;
 
+    [Header("Ragdoll")]
+    [SerializeField] private Rigidbody hipRigidbody;   
+    private Rigidbody[] _ragdollBodies;
+    private Collider[] _ragdollColliders;
     IEnumerator randomVoiceRange()
     {
         yield return new WaitForSeconds(Random.Range(SpeechIntervalMin, SpeechIntervalMax));
@@ -49,6 +69,33 @@ public class NPCBehaviour : MonoBehaviour
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
 
+        _ragdollBodies = GetComponentsInChildren<Rigidbody>(includeInactive: true);
+        _ragdollColliders = GetComponentsInChildren<Collider>(includeInactive: true);
+
+        SetRagdoll(false);
+    }
+    private void SetRagdoll(bool enabled)
+    {
+        if (animator) animator.enabled = !enabled;
+        if (MainCol) MainCol.enabled = !enabled;
+        if (agent)
+        {
+            agent.isStopped = enabled;
+            agent.updatePosition = !enabled;
+            agent.updateRotation = !enabled;
+        }
+
+        foreach (var rb in _ragdollBodies)
+        {
+            rb.isKinematic = !enabled;
+            rb.detectCollisions = enabled;
+        }
+
+        foreach (var col in _ragdollColliders)
+        {
+            if (col == MainCol) continue;
+            col.enabled = enabled;
+        }
     }
 
     public void SetHome(Vector3 home)
@@ -168,6 +215,62 @@ public class NPCBehaviour : MonoBehaviour
             source.clip = genericResponce[index];
             source.volume = .4f;
             source.Play();
+        }
+    }
+
+    public void TakeDamage(float amount)
+    {
+        if (isDead) return;
+
+        health -= amount;
+        Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
+
+        if (health <= 0)
+        {
+            Die(); 
+        }
+    }
+
+    private void Die()
+    {
+        isDead = true;
+
+        if (deathEffect != null)
+            Instantiate(deathEffect, transform.position, Quaternion.identity);
+
+        Debug.Log("Player committed a crime — murder!");
+        // tracking system here
+
+        PlayerStatsTracker.Instance.RegisterCrime();
+        SetRagdoll(true);
+
+        DropGold();
+        TryDropLoot();
+
+        agent.isStopped = true;
+        MainCol.enabled = false;
+
+        Destroy(gameObject, 5f);
+    }
+
+    private void DropGold()
+    {
+        int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
+        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
+
+        // Replace with your actual gold pickup or economy system:
+        InventoryManager.Instance?.AddGold(goldAmount);
+    }
+
+    private void TryDropLoot()
+    {
+        var validDrops = possibleDrops.FindAll(drop => drop.item != null && Random.value <= drop.dropChance);
+
+        if (validDrops.Count > 0)
+        {
+            var selected = validDrops[Random.Range(0, validDrops.Count)];
+            InventoryManager.Instance?.AddItem(selected.item, 1);
+            Debug.Log($"{gameObject.name} dropped: {selected.item.name}");
         }
     }
 }

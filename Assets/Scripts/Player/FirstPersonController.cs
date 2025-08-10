@@ -119,13 +119,25 @@ namespace StarterAssets
 
         private float _lastAttackTime = -999f;
 
+        [Header("Respawn settings")]
+        [SerializeField] private bool enableRespawn = true;
+        [SerializeField] private float respawnHoldTime = 0.75f;
+        [SerializeField, Range(0f, 1f)] private float respawnHealthPct = 1f;
+
+        [SerializeField] private float deathFadeDuration = 2.5f;
+        [SerializeField] private string deathStateTag = "Death";
+        [SerializeField] private float fadeInDuration = 1.2f;
+
+        private Vector3 fallbackSpawnPos;
+        private Quaternion fallbackSpawnRot;
+        private bool isRespawning = false;
+
         [Header("Inventory UI")]
         [SerializeField] private GameObject inventoryUI;
         public bool isInventoryOpen = false;
 
 
 		[Header("equipment manager")]
-        private Dictionary<ItemData.EquipmentSlot, ItemData> equippedItems = new();
         public Transform weaponHolder;
         public Transform[] armorHolder = new Transform[4];
 
@@ -144,7 +156,6 @@ namespace StarterAssets
 
 		private void Awake()
 		{
-			// get a reference to our main camera
 			if (_mainCamera == null)
 			{
 				_mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
@@ -174,7 +185,10 @@ namespace StarterAssets
 			_audioSource = GetComponent<AudioSource>();
             _jumpTimeoutDelta = JumpTimeout;
 			_fallTimeoutDelta = FallTimeout;
-		}
+
+            fallbackSpawnPos = transform.position;
+            fallbackSpawnRot = transform.rotation;
+        }
 
 		private void Update()
 		{
@@ -248,22 +262,27 @@ namespace StarterAssets
 			Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
 		}
 
-		private void CameraMovement()
-		{
-			if(!_animator) return;
+        private void CameraMovement()
+        {
+            if (!_animator) return;
 
-			var Mouse_X = _input.look.x;
-			var Mouse_Y = _input.look.y;
-			Camera.position = CameraRoot.position;
+            var Mouse_X = _input.look.x;
+            var Mouse_Y = _input.look.y;
+            Camera.position = CameraRoot.position;
+            Camera.rotation = CameraRoot.rotation; 
 
-			_xRot += Mouse_Y * MouseSensitivity * Time.deltaTime;
-			_xRot = Mathf.Clamp(_xRot, UpperLimit, LowerLimit);
 
-			Camera.localRotation = Quaternion.Euler(_xRot, 0, 0);
-			transform.Rotate(Vector3.up, Mouse_X * MouseSensitivity * Time.deltaTime);
-		}
+            _xRot += Mouse_Y * MouseSensitivity * Time.deltaTime;
+            _xRot = Mathf.Clamp(_xRot, UpperLimit, LowerLimit);
 
-		private void Move()
+            Camera.localRotation = Quaternion.Euler(_xRot, 0, 0);
+
+            float yaw = Mouse_X * MouseSensitivity * Time.deltaTime;
+            Quaternion deltaRotation = Quaternion.Euler(0f, yaw, 0f);
+            transform.rotation *= deltaRotation;
+        }
+
+        private void Move()
 		{
 
             // handle stamina cooldown timer
@@ -335,9 +354,16 @@ namespace StarterAssets
 			// if there is a move input rotate player when the player is moving
 			if (_input.move != Vector2.zero)
 			{
-				// move
-				inputDirection = transform.right * _input.move.x + transform.forward * _input.move.y;
-			}
+                // move
+                Vector3 forward = Camera.forward;
+                Vector3 right = Camera.right;
+                forward.y = 0f;
+                right.y = 0f;
+                forward.Normalize();
+                right.Normalize();
+
+                inputDirection = forward * _input.move.y + right * _input.move.x;
+            }
 
 			// move the player
 			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
@@ -351,9 +377,9 @@ namespace StarterAssets
         private void Attack()
         {
             if (_animator == null) return;
-
-            if (!equippedItems.TryGetValue(ItemData.EquipmentSlot.Weapon, out ItemData weaponItem))
+            if (!InventoryManager.Instance.equippedItems.TryGetValue(ItemData.EquipmentSlot.Weapon, out ItemData weaponItem))
             {
+                //Debug.Log("sword not equipped");
                 _input.attack = false;
                 return;
             }
@@ -370,22 +396,34 @@ namespace StarterAssets
                 _animator.SetTrigger("Attack");
 
                 Ray ray = new Ray(Camera.position, Camera.forward);
-
+                Debug.DrawRay(ray.origin, ray.direction * attackDistance, Color.red, 10f);
                 if (Physics.Raycast(ray, out RaycastHit hit, attackDistance))
                 {
                     Debug.Log("Hit object: " + hit.collider.name);
+                    var npc = hit.collider.GetComponentInParent<NPCBehaviour>();
+                    if (npc != null)
+                    {
+                        npc.TakeDamage(attackDamage);
+                    }
 
-                    EnemyBehavior enemy = hit.collider.GetComponent<EnemyBehavior>();
+                    var enemy = hit.collider.GetComponent<EnemyBehavior>();
                     if (enemy != null)
                     {
                         enemy.TakeDamage(attackDamage);
-
-                        if (Hitfx != null)
-                            Instantiate(Hitfx, hit.point, Quaternion.identity);
-
-                        if (HitSFX != null)
-                            _audioSource.PlayOneShot(HitSFX);
                     }
+
+                    var guard = hit.collider.GetComponentInParent<GuardBehaviour>();
+                    if (guard != null)
+                    {
+                        guard.TakeDamage(attackDamage);
+
+                    }
+
+                    if (Hitfx != null)
+                        Instantiate(Hitfx, hit.point, Quaternion.identity);
+
+                    if (HitSFX != null)
+                        _audioSource.PlayOneShot(HitSFX);
                 }
 
                 _lastAttackTime = Time.time;
@@ -393,6 +431,7 @@ namespace StarterAssets
             }
             else if (_input.attack)
             {
+                Debug.Log("Attack on cooldown");
                 _input.attack = false;
             }
         }
@@ -464,15 +503,17 @@ namespace StarterAssets
 
             if (PlayerHealth <= 0)
             {
-                isAlive = false;
-                //_animator.SetBool(_animDeath, true);
-                //if (death.Length > 0)
-                //{
-                //    int index = Random.Range(0, death.Length);
-                //    AudioSource.PlayClipAtPoint(death[index], _controller.center, 1.8f);
-                //}
-               InventoryManager.Instance.ClearInventory();
-                //StartCoroutine(DelayAD(8));
+                if (!isRespawning && enableRespawn)
+                {
+                    StartCoroutine(RespawnRoutine());
+                }
+                else
+                {
+                    isAlive = false;
+                }
+
+                InventoryManager.Instance.ClearInventory();
+                return;
 
             }
         }
@@ -495,17 +536,87 @@ namespace StarterAssets
 
             PlayerHealth += amount;
 
-            // Clamp to max value if you have a max health (optional)
             if (PlayerHealth > healthbar.maxValue)
                 PlayerHealth = healthbar.maxValue;
-
-            // Update the UI
             healthbar.value = PlayerHealth;
-
-            // Optionally, you can add visual/audio feedback here
             Debug.Log("Healed for " + amount + ", current health: " + PlayerHealth);
         }
 
+        private IEnumerator RespawnRoutine()
+        {
+            isRespawning = true;
+            isAlive = false;
+
+            _input.enabled = false;
+            _controller.enabled = false;
+
+            if (_animator) _animator.SetTrigger("Death");
+
+            var immersive = GetComponent<FP_immersive>();
+            if (immersive)
+            {
+                immersive.FadeBlack(1f, deathFadeDuration, 0f, false);
+            }
+
+            yield return StartCoroutine(WaitForDeathAnimOrTimeout(deathFadeDuration + 0.75f));
+            Transform spawn = GetClosestRespawnPoint();
+            if (spawn != null)
+            {
+                transform.position = spawn.position;
+                transform.rotation = spawn.rotation;
+            }
+            else
+            {
+                transform.position = fallbackSpawnPos;
+                transform.rotation = fallbackSpawnRot;
+            }
+
+            float targetHealth = Mathf.Max(1f, MaxHealth * respawnHealthPct);
+            PlayerHealth = Mathf.Clamp(targetHealth, 1f, MaxHealth);
+            healthbar.value = PlayerHealth;
+
+            _verticalVelocity = 0f;
+            staminaExhausted = false;
+            PlayerStamina = MaxStamina;
+            staminaSlider.value = PlayerStamina;
+
+            _controller.enabled = true;
+            _input.enabled = true;
+            isAlive = true;
+
+            if (_animator)
+            {
+                _animator.ResetTrigger("Death");
+                _animator.SetTrigger("Respawn");
+            }
+            if (immersive)
+            {
+                immersive.FadeBlack(0f, fadeInDuration, respawnHoldTime, false);
+            }
+
+            isRespawning = false;
+        }
+        private IEnumerator WaitForDeathAnimOrTimeout(float maxWaitSeconds)
+        {
+            float t = 0f;
+            while (t < maxWaitSeconds)
+            {
+                if (_animator)
+                {
+                    var st = _animator.GetCurrentAnimatorStateInfo(0);
+                    if (st.IsTag(deathStateTag) && st.normalizedTime >= 1f)
+                        yield break;
+                }
+                t += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+
+        private Transform GetClosestRespawnPoint()
+        {
+            var cp = Checkpoint.GetClosest(transform.position);
+            return cp ? cp.SpawnTransform : null;
+        }
         //private void OnDrawGizmosSelected()
         //{
         //	Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);

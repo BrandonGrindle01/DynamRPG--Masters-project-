@@ -12,14 +12,17 @@ public class InventoryManager : MonoBehaviour
 
     [Header("Inventory")]
     public List<InventorySlot> inventory = new List<InventorySlot>();
-    private Dictionary<ItemData.EquipmentSlot, ItemData> equippedItems = new();
+    public Dictionary<ItemData.EquipmentSlot, ItemData> equippedItems = new();
 
     private GameObject currentWeaponObject;
     private GameObject[] currentArmorObjects = new GameObject[4];
 
+    [SerializeField] private int playergold = 0;
+    [SerializeField] private GameObject GoldUI;
+
     [Header("UI")]
-    public Transform ItemContent;
-    public GameObject ItemContainer;
+    [SerializeField] private Transform ItemContent;
+    [SerializeField] private GameObject ItemContainer;
 
     [HideInInspector] public List<ItemController> ItemControllerList = new List<ItemController>();
 
@@ -223,5 +226,11 @@ public class InventoryManager : MonoBehaviour
             .ToList();
 
         RefreshUI();
+    }
+
+    public void AddGold(int amount)
+    {
+        playergold += amount;
+        //ui update
     }
 }

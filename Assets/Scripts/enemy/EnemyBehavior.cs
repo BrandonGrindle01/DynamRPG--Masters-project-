@@ -21,7 +21,17 @@ public class EnemyBehavior : MonoBehaviour
     [SerializeField] private Transform player;
     [SerializeField] private int AttkDMG = 10;
 
-    private float timeBetweenAttacks = 2f;
+    [Header("Attack Timing")]
+    [SerializeField] private float timeBetweenAttacks = 2f;
+    private float nextAttackTime = 0f;
+    private bool isAttacking = false;
+    [SerializeField] private float hitPercent = 0.5f;
+    [SerializeField] private string attackStateTag = "Attack";
+
+    private bool _attackInProgress = false;
+    private bool _damageThisSwing = false;
+    private bool _wasInAttackTag = false;
+    private float _nextAttackReadyTime = 0f;
     private bool alreadyAttacked;
     [SerializeField] private float health = 50f;
 
@@ -40,6 +50,10 @@ public class EnemyBehavior : MonoBehaviour
     private Quaternion targetRotation;
     private float turnSpeed = 5f;
 
+    [Header("Death Drops")]
+    [SerializeField] private int minGoldDrop = 5;
+    [SerializeField] private int maxGoldDrop = 20;
+
     private IEnumerator WaitAtPoint()
     {
         isWaiting = true;
@@ -57,6 +71,10 @@ public class EnemyBehavior : MonoBehaviour
         agent = GetComponent<NavMeshAgent>();
         animator = GetComponent<Animator>();
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
+
+        agent.stoppingDistance = attackRange * 0.9f;
+        agent.autoBraking = true;
+        agent.updateRotation = false;
     }
 
     private void Update()
@@ -74,15 +92,9 @@ public class EnemyBehavior : MonoBehaviour
 
         switch (currentState)
         {
-            case EnemyState.Patrol:
-                Patrol();
-                break;
-            case EnemyState.Chase:
-                ChasePlayer();
-                break;
-            case EnemyState.Attack:
-                AttackPlayer();
-                break;
+            case EnemyState.Patrol: Patrol(); break;
+            case EnemyState.Chase: ChasePlayer(); break;
+            case EnemyState.Attack: AttackPlayer(); break;
         }
 
         animator.SetFloat("Moving", agent.velocity.magnitude);
@@ -175,25 +187,75 @@ public class EnemyBehavior : MonoBehaviour
     {
         if (player == null) return;
         agent.SetDestination(player.position);
+        Vector3 look = player.position - transform.position;
+        look.y = 0f;
+        if (agent.desiredVelocity.sqrMagnitude > 0.01f) look = agent.desiredVelocity;
+        if (look.sqrMagnitude > 0.0001f)
+        {
+            Quaternion target = Quaternion.LookRotation(look.normalized, Vector3.up);
+            transform.rotation = Quaternion.Slerp(transform.rotation, target, Time.deltaTime * 12f);
+        }
     }
 
+    //DOUBLE CHECK LOGIC
     private void AttackPlayer()
     {
         if (player == null) return;
 
-        agent.SetDestination(transform.position);
-        transform.LookAt(player);
+        Vector3 flat = player.position - transform.position; flat.y = 0f;
+        if (flat.sqrMagnitude > 0.0001f)
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(flat), Time.deltaTime * 12f);
 
-        if (!alreadyAttacked)
+        bool inRange = PlayerInAttackRange();
+
+        if (!_attackInProgress && Time.time >= _nextAttackReadyTime && inRange)
         {
+            _attackInProgress = true;
+            _damageThisSwing = false;
+            animator.ResetTrigger("Attack");
             animator.SetTrigger("Attack");
-            player.GetComponent<FirstPersonController>()?.playerDamaged(AttkDMG);
-
-            alreadyAttacked = true;
-            Invoke(nameof(ResetAttack), timeBetweenAttacks);
         }
+
+        bool coolingDown = Time.time < _nextAttackReadyTime;
+        if (_attackInProgress || (coolingDown && inRange))
+            agent.ResetPath();
+        else
+            agent.SetDestination(player.position);
+
+        var state = animator.GetCurrentAnimatorStateInfo(0);
+        bool inAttackTag = state.IsTag(attackStateTag);
+
+        if (inAttackTag)
+        {
+            float cycle = state.normalizedTime % 1f;
+
+            if (!_damageThisSwing && cycle >= hitPercent)
+            {
+                TryApplyMeleeHit();
+                _damageThisSwing = true;
+            }
+        }
+
+        if (_wasInAttackTag && !inAttackTag)
+        {
+            _attackInProgress = false;
+            _nextAttackReadyTime = Time.time + timeBetweenAttacks;
+        }
+
+        _wasInAttackTag = inAttackTag;
     }
 
+    private void TryApplyMeleeHit()
+    {
+        if (player == null) return;
+        Debug.Log("trying to Attacking player");
+        float dist = Vector3.Distance(transform.position, player.position);
+        if (dist <= attackRange + 0.4f) 
+        {
+            Debug.Log("Attacking player");
+            player.GetComponent<FirstPersonController>()?.playerDamaged(AttkDMG);
+        }
+    }
 
     public void TakeDamage(float amount)
     {
@@ -214,12 +276,19 @@ public class EnemyBehavior : MonoBehaviour
         agent.isStopped = true;
         animator.SetBool("IsDead", true);
         IsDead = true;
-        // Optionally disable collider or destroy after time
+        DropGold();
         Destroy(gameObject, 5f);
     }
 
     private void ResetAttack()
     {
         alreadyAttacked = false;
+    }
+
+    private void DropGold()
+    {
+        int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
+        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
+        InventoryManager.Instance?.AddGold(goldAmount);
     }
 }
