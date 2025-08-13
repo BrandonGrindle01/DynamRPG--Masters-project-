@@ -41,6 +41,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 2866085159822962736}
+  - component: {fileID: -4346232274584675782}
+  - component: {fileID: -6661254198379817438}
   m_Layer: 0
   m_Name: Farmman
   m_TagString: Untagged
@@ -70,6 +72,44 @@ Transform:
   - {fileID: 3721480368290888019}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
+--- !u!114 &-4346232274584675782
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 413540403332564878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: abe120d719ecaf347ad6d9bc32d905c1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  traderType: 4
+  refusalText: You think you can steal from me and still get service? GET LOST
+  stock: []
+  sellbackMultiplier: 0.5
+  ownerNameForTheftBan: Greg
+--- !u!65 &-6661254198379817438
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 413540403332564878}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.34875488, y: 1.6605353, z: 0.28836823}
+  m_Center: {x: 0.0018310547, y: 1.0730851, z: 0.006801605}
 --- !u!1 &533346761682331652
 GameObject:
   m_ObjectHideFlags: 0

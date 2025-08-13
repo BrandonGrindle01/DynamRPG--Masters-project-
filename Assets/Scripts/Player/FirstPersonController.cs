@@ -3,98 +3,83 @@ using System.Collections;
 using UnityEngine.UI;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Linq;
+using UnityEngine.EventSystems;
+
 
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
 #endif
-
 namespace StarterAssets
 {
-	[RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(CharacterController))]
 #if ENABLE_INPUT_SYSTEM
-	[RequireComponent(typeof(PlayerInput))]
+    [RequireComponent(typeof(PlayerInput))]
 #endif
-	public class FirstPersonController : MonoBehaviour
-	{
-		public static FirstPersonController instance;
-		[Header("Player")]
-		[Tooltip("Move speed of the character in m/s")]
-		public float MoveSpeed = 4.0f;
-		[Tooltip("Sprint speed of the character in m/s")]
-		public float SprintSpeed = 6.0f;
-		[Tooltip("Rotation speed of the character")]
-		public float RotationSpeed = 1.0f;
-		[Tooltip("Acceleration and deceleration")]
-		public float SpeedChangeRate = 10.0f;
+    public class FirstPersonController : MonoBehaviour
+    {
+        public static FirstPersonController instance;
 
-		[Space(10)]
-		[Tooltip("The height the player can jump")]
-		public float JumpHeight = 1.2f;
-		[Tooltip("The character uses its own gravity value. The engine default is -9.81f")]
-		public float Gravity = -15.0f;
+        [Header("Player")]
+        public float MoveSpeed = 4.0f;
+        public float SprintSpeed = 6.0f;
+        public float RotationSpeed = 1.0f;
+        public float SpeedChangeRate = 10.0f;
 
-		[Space(10)]
-		[Tooltip("Time required to pass before being able to jump again. Set to 0f to instantly jump again")]
-		public float JumpTimeout = 0.1f;
-		[Tooltip("Time required to pass before entering the fall state. Useful for walking down stairs")]
-		public float FallTimeout = 0.15f;
+        [Space(10)]
+        public float JumpHeight = 1.2f;
+        public float Gravity = -15.0f;
 
-		[Header("Player Grounded")]
-		[Tooltip("If the character is grounded or not. Not part of the CharacterController built in grounded check")]
-		public bool Grounded = true;
-		[Tooltip("Useful for rough ground")]
-		public float GroundedOffset = -0.14f;
-		[Tooltip("The radius of the grounded check. Should match the radius of the CharacterController")]
-		public float GroundedRadius = 0.5f;
-		[Tooltip("What layers the character uses as ground")]
-		public LayerMask GroundLayers;
+        [Space(10)]
+        public float JumpTimeout = 0.1f;
+        public float FallTimeout = 0.15f;
 
-		
-		// player
-		private float _speed;
-		private float _rotationVelocity;
-		private float _verticalVelocity;
-		private float _terminalVelocity = 53.0f;
+        [Header("Player Grounded")]
+        public bool Grounded = true;
+        public float GroundedOffset = -0.14f;
+        public float GroundedRadius = 0.5f;
+        public LayerMask GroundLayers;
 
-		// timeout deltatime
-		private float _jumpTimeoutDelta;
-		private float _fallTimeoutDelta;
+        private float _speed;
+        private float _rotationVelocity;
+        private float _verticalVelocity;
+        private float _terminalVelocity = 53.0f;
+
+        private float _jumpTimeoutDelta;
+        private float _fallTimeoutDelta;
 
         private Animator _animator;
-		private AudioSource _audioSource;
+        private AudioSource _audioSource;
 
 #if ENABLE_INPUT_SYSTEM
         private PlayerInput _playerInput;
 #endif
-		private CharacterController _controller;
-		private StarterAssetsInputs _input;
-		private GameObject _mainCamera;
+        private CharacterController _controller;
+        private StarterAssetsInputs _input;
+        private GameObject _mainCamera;
 
-		private const float _threshold = 0.01f;
+        private const float _threshold = 0.01f;
 
-
-
-		// Custom additions
-		[Header("playerStats")]
-		[SerializeField] private float PlayerHealth = 100;
+        [Header("playerStats")]
+        [SerializeField] private float PlayerHealth = 100;
         [SerializeField] private float MaxHealth = 100f;
         [SerializeField] private int Defense = 1;
-		private bool isAlive = true;
+        private bool isAlive = true;
 
         [SerializeField] private float PlayerStamina = 100f;
-        [SerializeField] private float MaxStamina = 100f; 
-        [SerializeField] private float StaminaDrainRate = 15f; 
-        [SerializeField] private float StaminaRegenRate = 10f; 
+        [SerializeField] private float MaxStamina = 100f;
+        [SerializeField] private float StaminaDrainRate = 15f;
+        [SerializeField] private float StaminaRegenRate = 10f;
         private bool isSprinting = false;
 
-        [SerializeField] private float StaminaCooldownDuration = 2f; 
+        [SerializeField] private float StaminaCooldownDuration = 2f;
         private bool staminaExhausted = false;
         private float staminaCooldownTimer = 0f;
 
         [Header("UI stats")]
         private Slider healthbar;
-        private Slider staminaSlider; 
+        private Slider staminaSlider;
         private TextMeshProUGUI armorRating;
 
         [Header("Camera")]
@@ -109,7 +94,6 @@ namespace StarterAssets
         [Header("Combat")]
         [SerializeField] private float attackCooldown = 2.0f;
         [SerializeField] private float attackDistance = 3f;
-        //[SerializeField] private float attackSpeed = 1.0f;
         public int attackDamage = 1;
 
         [SerializeField] private GameObject Hitfx;
@@ -136,119 +120,237 @@ namespace StarterAssets
         [SerializeField] private GameObject inventoryUI;
         public bool isInventoryOpen = false;
 
+        [Header("Crosshairs")]
+        [SerializeField] private GameObject normalCrosshair;
+        [SerializeField] private GameObject stealCrosshair;
+        [SerializeField] private float interactRange = 3f;
 
-		[Header("equipment manager")]
+        [Header("equipment manager")]
         public Transform weaponHolder;
         public Transform[] armorHolder = new Transform[4];
 
+        private int _uiLocks = 0;
 
         private bool IsCurrentDeviceMouse
-		{
-			get
-			{
-				#if ENABLE_INPUT_SYSTEM
-				return _playerInput.currentControlScheme == "KeyboardMouse";
-				#else
-				return false;
-				#endif
-			}
-		}
+        {
+            get
+            {
+#if ENABLE_INPUT_SYSTEM
+                return _playerInput.currentControlScheme == "KeyboardMouse";
+#else
+                return false;
+#endif
+            }
+        }
 
-		private void Awake()
-		{
-			if (_mainCamera == null)
-			{
-				_mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
-			}
+        private void Awake()
+        {
+            if (_mainCamera == null)
+                _mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
             instance = this;
         }
 
-		private void Start()
-		{
-			_controller = GetComponent<CharacterController>();
-			_input = GetComponent<StarterAssetsInputs>();
+        private void Start()
+        {
+            _controller = GetComponent<CharacterController>();
+            _input = GetComponent<StarterAssetsInputs>();
 #if ENABLE_INPUT_SYSTEM
-			_playerInput = GetComponent<PlayerInput>();
+            _playerInput = GetComponent<PlayerInput>();
 #else
-			Debug.LogError( "Starter Assets package is missing dependencies. Please use Tools/Starter Assets/Reinstall Dependencies to fix it");
+            Debug.LogError("Starter Assets dependencies missing. Use Tools/Starter Assets/Reinstall Dependencies.");
 #endif
 
-			healthbar = GameObject.Find("HealthBar")?.GetComponent<Slider>();
-            healthbar.maxValue = PlayerHealth; 
-            healthbar.value = PlayerHealth; 
-            
-            staminaSlider = GameObject.Find("Sprint")?.GetComponent <Slider>();
-            staminaSlider.maxValue = MaxStamina;
-            staminaSlider.value = PlayerStamina;
+            healthbar = GameObject.Find("HealthBar")?.GetComponent<Slider>();
+            if (healthbar)
+            {
+                healthbar.maxValue = PlayerHealth;
+                healthbar.value = PlayerHealth;
+            }
+
+            staminaSlider = GameObject.Find("Sprint")?.GetComponent<Slider>();
+            if (staminaSlider)
+            {
+                staminaSlider.maxValue = MaxStamina;
+                staminaSlider.value = PlayerStamina;
+            }
 
             _animator = GetComponentInChildren<Animator>();
-			_audioSource = GetComponent<AudioSource>();
+            _audioSource = GetComponent<AudioSource>();
             _jumpTimeoutDelta = JumpTimeout;
-			_fallTimeoutDelta = FallTimeout;
+            _fallTimeoutDelta = FallTimeout;
 
             fallbackSpawnPos = transform.position;
             fallbackSpawnRot = transform.rotation;
+
+            DialogueService.OnOpen += HandleDialogueOpen;
+            DialogueService.OnClose += HandleDialogueClose;
+            ShopService.OnShopOpened += HandleShopOpen;
+            ShopService.OnShopClosed += HandleShopClose;
         }
 
-		private void Update()
-		{
-			JumpAndGravity();
-			GroundedCheck();
-			Move();
-			Attack();
+        private void OnDestroy()
+        {
+            DialogueService.OnOpen -= HandleDialogueOpen;
+            DialogueService.OnClose -= HandleDialogueClose;
+            ShopService.OnShopOpened -= HandleShopOpen;
+            ShopService.OnShopClosed -= HandleShopClose;
+        }
+
+        private void Update()
+        {
+            
+            JumpAndGravity();
+            GroundedCheck();
             UpdateUI();
+            
+            Move();
+            Attack();
+            UpdateUI();
+
             if (_input.openInventory)
             {
                 ToggleInventory();
-				Debug.Log("!toggling inventory");
                 _input.openInventory = false;
             }
 
             if (_input.interact)
             {
-                TryPickupItem();
+                Interact();
                 _input.interact = false;
             }
 
             if (PlayerHealth > MaxHealth)
                 PlayerHealth = MaxHealth;
 
-            healthbar.maxValue = MaxHealth;
+            if (healthbar) healthbar.maxValue = MaxHealth;
+
+            if (IsUiLocked())
+            {
+                _input.attack = false;
+                _input.jump = false;
+            }
+        }
+
+        private void LateUpdate()
+        {
+            CameraMovement();
+        }
+
+        private bool IsPointerOverUI()
+        {
+            if (EventSystem.current == null) return false;
+            return EventSystem.current.IsPointerOverGameObject();
+        }
+
+        public void PushUiLock()
+        {
+            _uiLocks++;
+            _input.attack = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        public void PopUiLock()
+        {
+            _uiLocks = Mathf.Max(0, _uiLocks - 1);
+            if (_uiLocks == 0)
+            {
+                Cursor.lockState = isInventoryOpen ? CursorLockMode.None : CursorLockMode.Locked;
+                Cursor.visible = isInventoryOpen;
+            }
+        }
+
+        private bool IsUiLocked() => _uiLocks > 0;
+
+        private void HandleDialogueOpen(DialogueDefinition d, DialogueNode n)
+        {
+            // If shop is open, close it (single-UI rule). Optional:
+            // ShopService.End();
+            Debug.Log("Opening Dialogue");
+            PushUiLock();
+        }
+
+        private void HandleDialogueClose()
+        {
+            Debug.Log("closing Dialogue");
+            PopUiLock();
+        }
+
+        private void HandleShopOpen(Trader t)
+        {
+            Debug.Log("Opening shop");
+            //DialogueService.End();
+            PushUiLock();
+        }
+
+        private void HandleShopClose()
+        {
+            Debug.Log("closing shop");
+            PopUiLock();
         }
 
         private void UpdateUI()
         {
-            healthbar.value = PlayerHealth;
-            staminaSlider.value = PlayerStamina;
-        }
+            if (healthbar) healthbar.value = PlayerHealth;
+            if (staminaSlider) staminaSlider.value = PlayerStamina;
 
-        private void LateUpdate()
-		{
-			CameraMovement();
-		}
+            UpdateLookHints();
+        }
 
         private void ToggleInventory()
         {
-            isInventoryOpen = !isInventoryOpen;
-            inventoryUI.SetActive(isInventoryOpen);
-            _input.cursorLocked = !isInventoryOpen;
+            bool opening = !isInventoryOpen;
+
+            if (opening)
+            {
+                DialogueService.End();
+                ShopService.End();
+            }
+
+            isInventoryOpen = opening;
+            if (inventoryUI) inventoryUI.SetActive(isInventoryOpen);
+
             Cursor.lockState = isInventoryOpen ? CursorLockMode.None : CursorLockMode.Locked;
             Cursor.visible = isInventoryOpen;
+
+            _input.cursorLocked = !isInventoryOpen;
         }
 
-        private void TryPickupItem()
+        private void Interact()
         {
+            if (IsUiLocked()) return;
+
             Ray ray = new Ray(Camera.position, Camera.forward);
-            if (Physics.Raycast(ray, out RaycastHit hit, 3f))
+            if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
             {
+                var dlgComp = hit.collider.GetComponentInParent<DialogueComponent>();
+                if (dlgComp != null)
+                {
+                    dlgComp.TryStartDialogue();
+                    return;
+                }
+
+                var trader = hit.collider.GetComponentInParent<Trader>();
+                if (trader != null)
+                {
+                    bool opened = trader.TryOpenShop(this);
+                    if (!opened && !string.IsNullOrEmpty(trader.LastRefusalText))
+                        DialogueService.BeginOneLiner(trader.name, trader.LastRefusalText, dlgComp);
+                    return;
+                }
+                var chest = hit.collider.GetComponentInParent<SecretChest>();
+                if (chest != null && chest.CanInteract())
+                {
+                    chest.Interact();
+                    return;
+                }
+
                 var pickup = hit.collider.GetComponent<ItemCollection>();
                 if (pickup != null)
                 {
                     if (pickup.isOwned && !pickup.wasStolen)
-                    {
                         pickup.MarkAsStolen();
-                        // Optional: notify crime system here
-                    }
+
                     InventoryManager.Instance.AddItem(pickup.itemData, pickup.amount);
                     Destroy(hit.collider.gameObject);
                 }
@@ -256,11 +358,10 @@ namespace StarterAssets
         }
 
         private void GroundedCheck()
-		{
-			// set sphere position, with offset
-			Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
-			Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
-		}
+        {
+            Vector3 spherePosition = new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z);
+            Grounded = Physics.CheckSphere(spherePosition, GroundedRadius, GroundLayers, QueryTriggerInteraction.Ignore);
+        }
 
         private void CameraMovement()
         {
@@ -269,12 +370,10 @@ namespace StarterAssets
             var Mouse_X = _input.look.x;
             var Mouse_Y = _input.look.y;
             Camera.position = CameraRoot.position;
-            Camera.rotation = CameraRoot.rotation; 
-
+            Camera.rotation = CameraRoot.rotation;
 
             _xRot += Mouse_Y * MouseSensitivity * Time.deltaTime;
             _xRot = Mathf.Clamp(_xRot, UpperLimit, LowerLimit);
-
             Camera.localRotation = Quaternion.Euler(_xRot, 0, 0);
 
             float yaw = Mouse_X * MouseSensitivity * Time.deltaTime;
@@ -283,26 +382,26 @@ namespace StarterAssets
         }
 
         private void Move()
-		{
+        {
+            if (IsUiLocked())
+            {
+                _controller.Move(new Vector3(0f, _verticalVelocity, 0f) * Time.deltaTime);
+                if (_animator) _animator.SetFloat("Running", 0f);
+                return;
+            }
 
-            // handle stamina cooldown timer
             if (staminaExhausted)
             {
                 staminaCooldownTimer -= Time.deltaTime;
-                if (staminaCooldownTimer <= 0f && PlayerStamina > 10f) 
-                {
+                if (staminaCooldownTimer <= 0f && PlayerStamina > 10f)
                     staminaExhausted = false;
-                }
             }
 
-            // Handle stamina logic before speed calc
             bool wantsToSprint = _input.sprint && !staminaExhausted && PlayerStamina > 0 && _input.move != Vector2.zero;
             isSprinting = wantsToSprint;
 
-            // Sprint is only allowed if stamina > 0
             float targetSpeed = isSprinting ? SprintSpeed : MoveSpeed;
-            // a simplistic acceleration and deceleration designed to be easy to remove, replace, or iterate upon
-            // custom stamina logic.
+
             if (isSprinting)
             {
                 PlayerStamina -= StaminaDrainRate * Time.deltaTime;
@@ -317,56 +416,39 @@ namespace StarterAssets
             else
             {
                 PlayerStamina += StaminaRegenRate * Time.deltaTime;
-                if (PlayerStamina > MaxStamina)
-                    PlayerStamina = MaxStamina;
+                if (PlayerStamina > MaxStamina) PlayerStamina = MaxStamina;
             }
 
-            staminaSlider.value = PlayerStamina; 
-            // note: Vector2's == operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-            // if there is no input, set the target speed to 0
             if (_input.move == Vector2.zero) targetSpeed = 0.0f;
 
-			// a reference to the players current horizontal velocity
-			float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
+            float currentHorizontalSpeed = new Vector3(_controller.velocity.x, 0.0f, _controller.velocity.z).magnitude;
 
-			float speedOffset = 0.1f;
-			float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
+            float speedOffset = 0.1f;
+            float inputMagnitude = _input.analogMovement ? _input.move.magnitude : 1f;
 
-			// accelerate or decelerate to target speed
-			if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
-			{
-				// creates curved result rather than a linear one giving a more organic speed change
-				// note T in Lerp is clamped, so we don't need to clamp our speed
-				_speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
+            if (currentHorizontalSpeed < targetSpeed - speedOffset || currentHorizontalSpeed > targetSpeed + speedOffset)
+            {
+                _speed = Mathf.Lerp(currentHorizontalSpeed, targetSpeed * inputMagnitude, Time.deltaTime * SpeedChangeRate);
+                _speed = Mathf.Round(_speed * 1000f) / 1000f;
+            }
+            else
+            {
+                _speed = targetSpeed;
+            }
 
-				// round speed to 3 decimal places
-				_speed = Mathf.Round(_speed * 1000f) / 1000f;
-			}
-			else
-			{
-				_speed = targetSpeed;
-			}
+            Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
 
-			// normalise input direction
-			Vector3 inputDirection = new Vector3(_input.move.x, 0.0f, _input.move.y).normalized;
-
-			// note: Vector2's != operator uses approximation so is not floating point error prone, and is cheaper than magnitude
-			// if there is a move input rotate player when the player is moving
-			if (_input.move != Vector2.zero)
-			{
-                // move
+            if (_input.move != Vector2.zero)
+            {
                 Vector3 forward = Camera.forward;
                 Vector3 right = Camera.right;
-                forward.y = 0f;
-                right.y = 0f;
-                forward.Normalize();
-                right.Normalize();
-
+                forward.y = 0f; right.y = 0f;
+                forward.Normalize(); right.Normalize();
                 inputDirection = forward * _input.move.y + right * _input.move.x;
             }
 
-			// move the player
-			_controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+            _controller.Move(inputDirection.normalized * (_speed * Time.deltaTime) + new Vector3(0.0f, _verticalVelocity, 0.0f) * Time.deltaTime);
+
             if (_animator != null)
             {
                 float speedPercent = _speed / SprintSpeed;
@@ -376,10 +458,15 @@ namespace StarterAssets
 
         private void Attack()
         {
+            if (IsUiLocked() || Cursor.lockState != CursorLockMode.Locked || IsPointerOverUI())
+            {
+                _input.attack = false;
+                return;
+            }
             if (_animator == null) return;
+
             if (!InventoryManager.Instance.equippedItems.TryGetValue(ItemData.EquipmentSlot.Weapon, out ItemData weaponItem))
             {
-                //Debug.Log("sword not equipped");
                 _input.attack = false;
                 return;
             }
@@ -390,40 +477,32 @@ namespace StarterAssets
                 return;
             }
 
-            if (_input.attack && Time.time >= _lastAttackTime + attackCooldown)
+            if (_input.attack && Time.time >= _lastAttackTime + attackCooldown && !staminaExhausted)
             {
-                Debug.Log("attacking");
                 _animator.SetTrigger("Attack");
 
                 Ray ray = new Ray(Camera.position, Camera.forward);
                 Debug.DrawRay(ray.origin, ray.direction * attackDistance, Color.red, 10f);
                 if (Physics.Raycast(ray, out RaycastHit hit, attackDistance))
                 {
-                    Debug.Log("Hit object: " + hit.collider.name);
                     var npc = hit.collider.GetComponentInParent<NPCBehaviour>();
-                    if (npc != null)
-                    {
-                        npc.TakeDamage(attackDamage);
-                    }
+                    if (npc != null) npc.TakeDamage(attackDamage);
 
                     var enemy = hit.collider.GetComponent<EnemyBehavior>();
-                    if (enemy != null)
-                    {
-                        enemy.TakeDamage(attackDamage);
-                    }
+                    if (enemy != null) enemy.TakeDamage(attackDamage);
 
                     var guard = hit.collider.GetComponentInParent<GuardBehaviour>();
-                    if (guard != null)
-                    {
-                        guard.TakeDamage(attackDamage);
+                    if (guard != null) guard.TakeDamage(attackDamage);
 
-                    }
-
-                    if (Hitfx != null)
-                        Instantiate(Hitfx, hit.point, Quaternion.identity);
-
-                    if (HitSFX != null)
-                        _audioSource.PlayOneShot(HitSFX);
+                    if (Hitfx != null) Instantiate(Hitfx, hit.point, Quaternion.identity);
+                    if (HitSFX != null) _audioSource.PlayOneShot(HitSFX);
+                }
+                PlayerStamina -= 10;
+                if (PlayerStamina <= 10f)
+                {
+                    PlayerStamina = 0f;
+                    staminaExhausted = true;
+                    staminaCooldownTimer = StaminaCooldownDuration;
                 }
 
                 _lastAttackTime = Time.time;
@@ -431,75 +510,63 @@ namespace StarterAssets
             }
             else if (_input.attack)
             {
-                Debug.Log("Attack on cooldown");
                 _input.attack = false;
             }
         }
 
         private void JumpAndGravity()
-		{
-			if (Grounded)
-			{
-				// reset the fall timeout timer
-				_fallTimeoutDelta = FallTimeout;
+        {
+            if (Grounded)
+            {
+                _fallTimeoutDelta = FallTimeout;
 
-				// stop our velocity dropping infinitely when grounded
-				if (_verticalVelocity < 0.0f)
-				{
-					_verticalVelocity = -2f;
-				}
+                if (_verticalVelocity < 0.0f) _verticalVelocity = -2f;
 
-				// Jump
-				if (_input.jump && _jumpTimeoutDelta <= 0.0f)
-				{
-					// the square root of H * -2 * G = how much velocity needed to reach desired height
-					_verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
-				}
+                if (_input.jump && _jumpTimeoutDelta <= 0.0f)
+                {
+                    if (!staminaExhausted && PlayerStamina >= 10)
+                    {
+                        _verticalVelocity = Mathf.Sqrt(JumpHeight * -2f * Gravity);
 
-				// jump timeout
-				if (_jumpTimeoutDelta >= 0.0f)
-				{
-					_jumpTimeoutDelta -= Time.deltaTime;
-				}
-			}
-			else
-			{
-				// reset the jump timeout timer
-				_jumpTimeoutDelta = JumpTimeout;
+                        PlayerStamina -= 10;
+                        if (PlayerStamina <= 10f)
+                        {
+                            PlayerStamina = 0f;
+                            staminaExhausted = true;
+                            staminaCooldownTimer = StaminaCooldownDuration;
+                        }
+                    }
 
-				// fall timeout
-				if (_fallTimeoutDelta >= 0.0f)
-				{
-					_fallTimeoutDelta -= Time.deltaTime;
-				}
+                    _input.jump = false;
+                }
+                if (_jumpTimeoutDelta >= 0.0f)
+                    _jumpTimeoutDelta -= Time.deltaTime;
+            }
+            else
+            {
+                _jumpTimeoutDelta = JumpTimeout;
 
-				// if we are not grounded, do not jump
-				_input.jump = false;
-			}
+                if (_fallTimeoutDelta >= 0.0f)
+                    _fallTimeoutDelta -= Time.deltaTime;
 
-			// apply gravity over time if under terminal (multiply by delta time twice to linearly speed up over time)
-			if (_verticalVelocity < _terminalVelocity)
-			{
-				_verticalVelocity += Gravity * Time.deltaTime;
-			}
-		}
+                _input.jump = false;
+            }
 
-		private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
-		{
-			if (lfAngle < -360f) lfAngle += 360f;
-			if (lfAngle > 360f) lfAngle -= 360f;
-			return Mathf.Clamp(lfAngle, lfMin, lfMax);
-		}
+            if (_verticalVelocity < _terminalVelocity)
+                _verticalVelocity += Gravity * Time.deltaTime;
+        }
 
-		public void playerDamaged(int amount)
-		{
-            PlayerHealth -= amount / Defense;
-            healthbar.value = PlayerHealth;
-            //if (painGrunt.Length > 0)
-            //{
-            //    int index = Random.Range(0, painGrunt.Length);
-            //    AudioSource.PlayClipAtPoint(painGrunt[index], _controller.center);
-            //}
+        private static float ClampAngle(float lfAngle, float lfMin, float lfMax)
+        {
+            if (lfAngle < -360f) lfAngle += 360f;
+            if (lfAngle > 360f) lfAngle -= 360f;
+            return Mathf.Clamp(lfAngle, lfMin, lfMax);
+        }
+
+        public void playerDamaged(int amount)
+        {
+            PlayerHealth -= amount / Mathf.Max(1, Defense);
+            if (healthbar) healthbar.value = PlayerHealth;
 
             if (PlayerHealth <= 0)
             {
@@ -514,7 +581,6 @@ namespace StarterAssets
 
                 InventoryManager.Instance.ClearInventory();
                 return;
-
             }
         }
 
@@ -535,11 +601,9 @@ namespace StarterAssets
             if (!isAlive) return;
 
             PlayerHealth += amount;
+            if (PlayerHealth > MaxHealth) PlayerHealth = MaxHealth;
 
-            if (PlayerHealth > healthbar.maxValue)
-                PlayerHealth = healthbar.maxValue;
-            healthbar.value = PlayerHealth;
-            Debug.Log("Healed for " + amount + ", current health: " + PlayerHealth);
+            if (healthbar) healthbar.value = PlayerHealth;
         }
 
         private IEnumerator RespawnRoutine()
@@ -553,13 +617,14 @@ namespace StarterAssets
             if (_animator) _animator.SetTrigger("Death");
 
             var immersive = GetComponent<FP_immersive>();
-            if (immersive)
-            {
-                immersive.FadeBlack(1f, deathFadeDuration, 0f, false);
-            }
+            if (immersive) immersive.FadeBlack(1f, deathFadeDuration, 0f, false);
 
             yield return StartCoroutine(WaitForDeathAnimOrTimeout(deathFadeDuration + 0.75f));
-            Transform spawn = GetClosestRespawnPoint();
+
+            Transform spawn = CheckpointManager.Instance
+                ? CheckpointManager.Instance.GetClosestAllowedSpawn(transform.position)
+                : null;
+
             if (spawn != null)
             {
                 transform.position = spawn.position;
@@ -573,12 +638,12 @@ namespace StarterAssets
 
             float targetHealth = Mathf.Max(1f, MaxHealth * respawnHealthPct);
             PlayerHealth = Mathf.Clamp(targetHealth, 1f, MaxHealth);
-            healthbar.value = PlayerHealth;
+            if (healthbar) healthbar.value = PlayerHealth;
 
             _verticalVelocity = 0f;
             staminaExhausted = false;
             PlayerStamina = MaxStamina;
-            staminaSlider.value = PlayerStamina;
+            if (staminaSlider) staminaSlider.value = PlayerStamina;
 
             _controller.enabled = true;
             _input.enabled = true;
@@ -589,13 +654,11 @@ namespace StarterAssets
                 _animator.ResetTrigger("Death");
                 _animator.SetTrigger("Respawn");
             }
-            if (immersive)
-            {
-                immersive.FadeBlack(0f, fadeInDuration, respawnHoldTime, false);
-            }
+            if (immersive) immersive.FadeBlack(0f, fadeInDuration, respawnHoldTime, false);
 
             isRespawning = false;
         }
+
         private IEnumerator WaitForDeathAnimOrTimeout(float maxWaitSeconds)
         {
             float t = 0f;
@@ -612,21 +675,24 @@ namespace StarterAssets
             }
         }
 
-        private Transform GetClosestRespawnPoint()
+        private void UpdateLookHints()
         {
-            var cp = Checkpoint.GetClosest(transform.position);
-            return cp ? cp.SpawnTransform : null;
+            if (stealCrosshair) stealCrosshair.SetActive(false);
+            if (normalCrosshair) normalCrosshair.SetActive(true);
+            if (IsUiLocked()) return;
+
+            Ray ray = new Ray(Camera.position, Camera.forward);
+            if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
+            {
+                var pickup = hit.collider.GetComponent<ItemCollection>();
+                if (pickup != null && pickup.isOwned && !pickup.wasStolen)
+                {
+                    if (stealCrosshair) stealCrosshair.SetActive(true);
+                    if (normalCrosshair) normalCrosshair.SetActive(false);
+                    return;
+                }
+            }
         }
-        //private void OnDrawGizmosSelected()
-        //{
-        //	Color transparentGreen = new Color(0.0f, 1.0f, 0.0f, 0.35f);
-        //	Color transparentRed = new Color(1.0f, 0.0f, 0.0f, 0.35f);
 
-        //	if (Grounded) Gizmos.color = transparentGreen;
-        //	else Gizmos.color = transparentRed;
-
-        //	// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
-        //	Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
-        //}
-    }
+    } 
 }

@@ -520,6 +520,13 @@ MonoBehaviour:
   SpeechIntervalMin: 0
   SpeechIntervalMax: 0
   hipRigidbody: {fileID: 0}
+  enableFleeOnHit: 1
+  fleeDuration: 5
+  fleeDistance: 15
+  fleeSpeedMultiplier: 1.5
+  fleeNavMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!195 &-2549600887106866780
 NavMeshAgent:
   m_ObjectHideFlags: 0

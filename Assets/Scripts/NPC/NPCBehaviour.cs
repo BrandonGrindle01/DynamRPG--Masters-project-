@@ -56,8 +56,21 @@ public class NPCBehaviour : MonoBehaviour
 
     [Header("Ragdoll")]
     [SerializeField] private Rigidbody hipRigidbody;   
-    private Rigidbody[] _ragdollBodies;
-    private Collider[] _ragdollColliders;
+    private Rigidbody[] ragdollBodies;
+    private Collider[] ragdollColliders;
+
+    [Header("Flee Behaviour")]
+    [SerializeField] private bool enableFleeOnHit = true;
+    [SerializeField] private float fleeDuration = 3f;
+    [SerializeField] private float fleeDistance = 12f;
+    [SerializeField, Range(1f, 3f)] private float fleeSpeedMultiplier = 1.5f;
+    [SerializeField] private LayerMask fleeNavMask = ~0;
+
+    private bool inDanger;
+    private float fleeTimer;
+    private float baseSpeed;
+    private Transform player;
+
     IEnumerator randomVoiceRange()
     {
         yield return new WaitForSeconds(Random.Range(SpeechIntervalMin, SpeechIntervalMax));
@@ -69,8 +82,15 @@ public class NPCBehaviour : MonoBehaviour
         animator = GetComponent<Animator>();
         agent = GetComponent<NavMeshAgent>();
 
-        _ragdollBodies = GetComponentsInChildren<Rigidbody>(includeInactive: true);
-        _ragdollColliders = GetComponentsInChildren<Collider>(includeInactive: true);
+        ragdollBodies = GetComponentsInChildren<Rigidbody>(includeInactive: true);
+        ragdollColliders = GetComponentsInChildren<Collider>(includeInactive: true);
+
+        baseSpeed = agent.speed;
+        if (player == null)
+        {
+            var p = GameObject.FindGameObjectWithTag("Player");
+            if (p) player = p.transform;
+        }
 
         SetRagdoll(false);
     }
@@ -85,13 +105,13 @@ public class NPCBehaviour : MonoBehaviour
             agent.updateRotation = !enabled;
         }
 
-        foreach (var rb in _ragdollBodies)
+        foreach (var rb in ragdollBodies)
         {
             rb.isKinematic = !enabled;
             rb.detectCollisions = enabled;
         }
 
-        foreach (var col in _ragdollColliders)
+        foreach (var col in ragdollColliders)
         {
             if (col == MainCol) continue;
             col.enabled = enabled;
@@ -122,6 +142,11 @@ public class NPCBehaviour : MonoBehaviour
         {
             playingAudio = true;
             StartCoroutine(randomVoiceRange());
+        }
+        if (inDanger)
+        {
+            Flee();
+            return;
         }
     }
 
@@ -224,10 +249,79 @@ public class NPCBehaviour : MonoBehaviour
 
         health -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
-
+        animator.SetTrigger("Hit");
+        if (enableFleeOnHit && !inDanger)
+        {
+            StartCoroutine(DelayFleeAfterHit(.4f));
+        }
         if (health <= 0)
         {
             Die(); 
+        }
+    }
+
+    private void SetFleeDestination()
+    {
+        if (player == null) return;
+
+        Vector3 fleeDir = (transform.position - player.position);
+        fleeDir.y = 0f;
+        if (fleeDir.sqrMagnitude < 0.01f) fleeDir = transform.forward;
+        fleeDir.Normalize();
+        Vector3 desired = transform.position + fleeDir * fleeDistance;
+
+        for (int i = 0; i < 6; i++)
+        {
+            Vector3 TrialLoc = desired + new Vector3(
+                Random.Range(-2f, 2f), 0f, Random.Range(-2f, 2f)
+            );
+
+            if (NavMesh.SamplePosition(TrialLoc, out NavMeshHit hit, 2.0f, NavMesh.AllAreas))
+            {
+                agent.SetDestination(hit.position);
+                Vector3 look = (hit.position - transform.position);
+                look.y = 0f;
+                if (look.sqrMagnitude > 0.001f)
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), Time.deltaTime * 10f);
+                return;
+            }
+        }
+
+        agent.SetDestination(transform.position + fleeDir * (fleeDistance * 0.5f));
+    }
+
+    private void Flee()
+    {
+        if (agent == null) { inDanger = false; return; }
+
+        fleeTimer -= Time.deltaTime;
+        animator.SetFloat("MoveSpeed", agent.velocity.magnitude);
+
+        if (!agent.pathPending && agent.remainingDistance < 1.5f)
+        {
+            SetFleeDestination();
+        }
+
+        if (fleeTimer <= 0f)
+        {
+            inDanger = false;
+            agent.speed = baseSpeed;
+            walkpointSet = false;
+            isLoitering = false;
+        }
+    }
+
+    private IEnumerator DelayFleeAfterHit(float delay)
+    {
+        yield return new WaitForSeconds(delay);
+
+        if (!isDead) 
+        {
+            inDanger = true;
+            fleeTimer = fleeDuration;
+
+            agent.speed = baseSpeed * fleeSpeedMultiplier;
+            SetFleeDestination();
         }
     }
 
@@ -239,7 +333,6 @@ public class NPCBehaviour : MonoBehaviour
             Instantiate(deathEffect, transform.position, Quaternion.identity);
 
         Debug.Log("Player committed a crime — murder!");
-        // tracking system here
 
         PlayerStatsTracker.Instance.RegisterCrime();
         SetRagdoll(true);

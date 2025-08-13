@@ -18,7 +18,7 @@ public class InventoryManager : MonoBehaviour
     private GameObject[] currentArmorObjects = new GameObject[4];
 
     [SerializeField] private int playergold = 0;
-    [SerializeField] private GameObject GoldUI;
+    [SerializeField] private TextMeshProUGUI GoldUI;
 
     [Header("UI")]
     [SerializeField] private Transform ItemContent;
@@ -33,8 +33,13 @@ public class InventoryManager : MonoBehaviour
         else Destroy(gameObject);
 
         RefreshUI();
+        UpdateGoldUI();
     }
 
+    private void UpdateGoldUI()
+    {
+        if (GoldUI) GoldUI.text = playergold.ToString();
+    }
     public void AddItem(ItemData item, int amount = 1)
     {
         if (item == null)
@@ -98,10 +103,8 @@ public class InventoryManager : MonoBehaviour
         if (item == null || item.itemType != ItemData.ItemType.Equipable)
             return;
 
-        // Check if something is already equipped in this slot
         if (equippedItems.TryGetValue(item.equipSlot, out var existingItem))
         {
-            // Already equipped — do nothing if it's not the same item
             if (existingItem != item)
             {
                 Debug.Log("Slot already occupied. Unequip first to equip a new item.");
@@ -109,7 +112,6 @@ public class InventoryManager : MonoBehaviour
             }
         }
 
-        // Equip the item
         equippedItems[item.equipSlot] = item;
         FirstPersonController.instance.ApplyEquipStats(item);
 
@@ -140,6 +142,11 @@ public class InventoryManager : MonoBehaviour
 
     public void UnequipItem(EquipmentSlot slot)
     {
+        if (equippedItems.TryGetValue(slot, out var item))
+        {
+            FirstPersonController.instance.RemoveEquipStats(item);
+        }
+
         equippedItems.Remove(slot);
 
         if (slot == EquipmentSlot.Weapon)
@@ -231,6 +238,34 @@ public class InventoryManager : MonoBehaviour
     public void AddGold(int amount)
     {
         playergold += amount;
-        //ui update
+        UpdateGoldUI();
+    }
+
+    public int GetGold() => playergold;
+
+    public bool SpendGold(int amount)
+    {
+        if (amount <= 0) return true;
+        if (playergold < amount) return false;
+        playergold -= amount;
+        UpdateGoldUI();
+        return true;
+    }
+
+    public bool HasOtherWeapon(ItemData except)
+    {
+        int count = 0;
+        foreach (var s in inventory)
+        {
+            if (s.item != null &&
+                s.item.itemType == ItemData.ItemType.Equipable &&
+                s.item.equipSlot == ItemData.EquipmentSlot.Weapon)
+            {
+                if (s.item == except) continue;
+                count++;
+                if (count > 0) return true;
+            }
+        }
+        return false;
     }
 }

@@ -1812,8 +1812,10 @@ GameObject:
   - component: {fileID: 7753404264368321190}
   - component: {fileID: 8291251498083916711}
   - component: {fileID: 6787224125261088315}
+  - component: {fileID: 7517903139688211504}
+  - component: {fileID: -8115344424224455177}
   m_Layer: 0
-  m_Name: Standing Idle
+  m_Name: Roak (Bandit leader)
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1851,18 +1853,25 @@ MonoBehaviour:
   currentState: 0
   agent: {fileID: 0}
   animator: {fileID: 0}
-  sightRange: 10
-  attackRange: 2
+  sightRange: 15
+  attackRange: 3
   playerLayer:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 64
   player: {fileID: 0}
-  AttkDMG: 10
-  walkRange: 10
+  AttkDMG: 18
+  timeBetweenAttacks: 3
+  hitPercent: 0.5
+  attackStateTag: Attack
+  health: 120
+  walkRange: 15
   groundLayer:
     serializedVersion: 2
-    m_Bits: 0
-  health: 50
+    m_Bits: 8
+  minWaitTime: 1
+  maxWaitTime: 5
+  minGoldDrop: 15
+  maxGoldDrop: 50
 --- !u!195 &6787224125261088315
 NavMeshAgent:
   m_ObjectHideFlags: 0
@@ -1883,8 +1892,51 @@ NavMeshAgent:
   m_AutoRepath: 1
   m_Height: 2
   m_BaseOffset: 0
-  m_WalkableMask: 4294967295
+  m_WalkableMask: 9
   m_ObstacleAvoidanceType: 4
+--- !u!95 &7517903139688211504
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4715604338681607657}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: de00116dacc7e2448b7016d58b398f11, type: 3}
+  m_Controller: {fileID: 9100000, guid: bffbd54036e72d743a18b5e237ba4d43, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!65 &-8115344424224455177
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4715604338681607657}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.66132694, y: 1.9187609, z: 0.56566143}
+  m_Center: {x: 0.018144518, y: 0.90161604, z: -0.0124646425}
 --- !u!1 &4894173131084074542
 GameObject:
   m_ObjectHideFlags: 0

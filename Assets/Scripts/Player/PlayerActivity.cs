@@ -1,4 +1,4 @@
-using Unity.VisualScripting;
+using TMPro;
 using UnityEngine;
 
 public class PlayerStatsTracker : MonoBehaviour
@@ -7,7 +7,8 @@ public class PlayerStatsTracker : MonoBehaviour
 
     [Header("Exploration")]
     public float distanceTraveled;
-    private Vector3 lastPosition;
+    private Vector3 _lastPos;
+    private CharacterController _cc;
 
     [Header("Combat & Behavior")]
     public int enemiesKilled;
@@ -19,50 +20,90 @@ public class PlayerStatsTracker : MonoBehaviour
     public float timeSinceLastQuest;
     public float timeInIdle;
 
-    private float idleTimer;
+    private float _idleTimer;
+
+    private const float MinMoveSpeed = 0.15f;
+    private const float TeleportThreshold = 15f;
+
+    [Header("Wanted UI")]
+    [SerializeField] private GameObject WantedUi;
+    private TextMeshProUGUI crime;
 
     private void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
-        lastPosition = transform.position;
+        else { Destroy(gameObject); return; }
+
+        _cc = GetComponent<CharacterController>();
+        _lastPos = transform.position;
+        crime = WantedUi.transform.Find("CrimeTitle/crimes")?.GetComponent<TextMeshProUGUI>();
     }
 
     private void Update()
     {
-        TrackDistance();
-        TrackIdleTime();
-        TrackCriminalBehaviour();
         timeSinceLastQuest += Time.deltaTime;
+        TrackCriminalBehaviour();
     }
 
-    private void TrackDistance()
+    private void LateUpdate()
     {
-        float moved = Vector3.Distance(transform.position, lastPosition);
-        if (moved > 0.1f)
+        TrackDistanceAndIdle();
+    }
+
+    private void TrackDistanceAndIdle()
+    {
+        float jump = Vector3.Distance(transform.position, _lastPos);
+        if (jump > TeleportThreshold)
         {
-            distanceTraveled += moved;
-            idleTimer = 0f;
+            _lastPos = transform.position;
+            _idleTimer = 0f;
+            timeInIdle = 0f;
+            return;
+        }
+
+        float speed;
+
+        if (_cc != null)
+        {
+            Vector3 v = _cc.velocity; v.y = 0f;
+            speed = v.magnitude;
+            distanceTraveled += speed * Time.deltaTime;
         }
         else
         {
-            idleTimer += Time.deltaTime;
+            distanceTraveled += jump;
+            speed = jump / Mathf.Max(Time.deltaTime, 0.0001f);
         }
-        lastPosition = transform.position;
-    }
 
-    private void TrackIdleTime()
-    {
-        timeInIdle = idleTimer;
+        if (speed > MinMoveSpeed)
+            _idleTimer = 0f;
+        else
+            _idleTimer += Time.deltaTime;
+
+        timeInIdle = _idleTimer;
+        _lastPos = transform.position;
     }
 
     private void TrackCriminalBehaviour()
     {
-        if(crimesCommitted > 0)
+        if (crimesCommitted > 0 && WorldTags.Instance != null)
         {
             WorldTags.Instance.isPlayerWanted = true;
+            WantedUi.SetActive(true);
+            if (crime != null)
+            {
+                crime.text = crimesCommitted.ToString();
+            }
         }
     }
+
+    public void NotifyTeleported(Vector3 newPosition)
+    {
+        _lastPos = newPosition;
+        _idleTimer = 0f;
+        timeInIdle = 0f;
+    }
+
     public void RegisterEnemyKill() => enemiesKilled++;
     public void RegisterCrime() => crimesCommitted++;
     public void RegisterFightAvoided() => fightsAvoided++;

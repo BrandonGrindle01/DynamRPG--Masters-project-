@@ -20,6 +20,11 @@ public class ItemData : ScriptableObject
     public int damage;
     public int armorBonus;
 
+    [Header("Shop")]
+    public int basePrice = 10;
+    public bool allowSell = true;
+    public bool isStarter = false;
+
     public enum ItemType { Consumable, Equipable, Quest, Tool, Material }
     public enum EquipmentSlot { Weapon, Helmet, Chestplate, Leggings, Boots }
 }

@@ -23,8 +23,7 @@ public class EnemyBehavior : MonoBehaviour
 
     [Header("Attack Timing")]
     [SerializeField] private float timeBetweenAttacks = 2f;
-    private float nextAttackTime = 0f;
-    private bool isAttacking = false;
+
     [SerializeField] private float hitPercent = 0.5f;
     [SerializeField] private string attackStateTag = "Attack";
 
@@ -32,7 +31,7 @@ public class EnemyBehavior : MonoBehaviour
     private bool _damageThisSwing = false;
     private bool _wasInAttackTag = false;
     private float _nextAttackReadyTime = 0f;
-    private bool alreadyAttacked;
+
     [SerializeField] private float health = 50f;
 
     private bool IsDead = false;
@@ -72,7 +71,6 @@ public class EnemyBehavior : MonoBehaviour
         animator = GetComponent<Animator>();
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
-        agent.stoppingDistance = attackRange * 0.9f;
         agent.autoBraking = true;
         agent.updateRotation = false;
     }
@@ -128,6 +126,8 @@ public class EnemyBehavior : MonoBehaviour
     private void Patrol()
     {
         if (isWaiting) return;
+
+        agent.stoppingDistance = 0.1f;
 
         if (!walkPointSet)
         {
@@ -186,6 +186,7 @@ public class EnemyBehavior : MonoBehaviour
     private void ChasePlayer()
     {
         if (player == null) return;
+        agent.stoppingDistance = attackRange * 0.9f;
         agent.SetDestination(player.position);
         Vector3 look = player.position - transform.position;
         look.y = 0f;
@@ -201,7 +202,7 @@ public class EnemyBehavior : MonoBehaviour
     private void AttackPlayer()
     {
         if (player == null) return;
-
+        agent.stoppingDistance = attackRange * 0.9f;
         Vector3 flat = player.position - transform.position; flat.y = 0f;
         if (flat.sqrMagnitude > 0.0001f)
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(flat), Time.deltaTime * 12f);
@@ -274,21 +275,17 @@ public class EnemyBehavior : MonoBehaviour
     {
         Debug.Log($"{gameObject.name} died.");
         agent.isStopped = true;
-        animator.SetBool("IsDead", true);
+        animator.SetTrigger("isDead");
         IsDead = true;
         DropGold();
         Destroy(gameObject, 5f);
     }
 
-    private void ResetAttack()
-    {
-        alreadyAttacked = false;
-    }
-
     private void DropGold()
     {
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
-        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
         InventoryManager.Instance?.AddGold(goldAmount);
+
+        DialogueService.BeginOneLiner(gameObject.name, $"Dropped {goldAmount} gold");
     }
 }

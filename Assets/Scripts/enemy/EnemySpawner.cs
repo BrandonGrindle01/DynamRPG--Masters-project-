@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
@@ -10,12 +9,14 @@ public class EnemySpawner : MonoBehaviour
     public int initialBanditCount = 3;
     public float spawnRadius = 20f;
     public float spawnCheckInterval = 60f;
-    public float respawnDelayIfEmpty = 300f; 
+    public float respawnDelayIfEmpty = 300f;
 
     [Header("Boss Spawning")]
     public GameObject bossPrefab;
     public float bossSpawnCooldown = 180f;
-    private bool bossSpawned = false;
+
+    private float _bossCooldownUntil = 0f;
+    private bool _wasEmpty = false;
 
     private List<GameObject> activeBandits = new();
     private float lastBanditCheckTime;
@@ -36,8 +37,18 @@ public class EnemySpawner : MonoBehaviour
     private void Update()
     {
         activeBandits.RemoveAll(b => b == null);
-
         float now = Time.time;
+
+        bool isEmpty = activeBandits.Count == 0;
+        bool justBecameEmpty = isEmpty && !_wasEmpty;
+
+        if (justBecameEmpty && now >= _bossCooldownUntil)
+        {
+            SpawnBoss();
+            _bossCooldownUntil = now + bossSpawnCooldown;
+        }
+
+        _wasEmpty = isEmpty;
 
         if (now - lastBanditCheckTime >= spawnCheckInterval)
         {
@@ -56,13 +67,6 @@ public class EnemySpawner : MonoBehaviour
             if (activeBandits.Count == 0)
                 banditsGoneSince = now;
         }
-
-
-        if (!bossSpawned && activeBandits.Count == 0 && now - banditsGoneSince >= bossSpawnCooldown)
-        {
-            SpawnBoss();
-            bossSpawned = true;
-        }
     }
 
     private void SpawnBandits(int count)
@@ -79,6 +83,8 @@ public class EnemySpawner : MonoBehaviour
     {
         Vector3 pos = GetRandomNavmeshPosition();
         Instantiate(bossPrefab, pos, Quaternion.identity);
+
+        UiControl.Instance?.Show("Warning! The Bandit Leader is Spawning");
     }
 
     private Vector3 GetRandomNavmeshPosition()
@@ -95,7 +101,6 @@ public class EnemySpawner : MonoBehaviour
                 return hit.position;
             }
         }
-
         return transform.position;
     }
 

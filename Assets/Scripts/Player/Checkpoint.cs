@@ -3,13 +3,15 @@ using UnityEngine;
 
 [RequireComponent(typeof(Collider))]
 public class Checkpoint : MonoBehaviour
-{ 
+{
     [Tooltip("If null, this object's transform is used as the spawn point.")]
     public Transform spawnPoint;
 
     public static readonly List<Checkpoint> All = new();
-
     public Transform SpawnTransform => spawnPoint != null ? spawnPoint : transform;
+
+    public bool isTown = false; 
+
 
     private void Reset()
     {

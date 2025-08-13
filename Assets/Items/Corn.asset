@@ -20,3 +20,7 @@ MonoBehaviour:
   stackable: 1
   maxStack: 99
   healAmount: 15
+  equipSlot: 0
+  damage: 0
+  armorBonus: 0
+  basePrice: 5

@@ -16,12 +16,23 @@ public class GuardBehaviour : MonoBehaviour
     [SerializeField] private NavMeshAgent agent;
     [SerializeField] private Animator animator;
 
+    [Header("Ragdoll Manager")]
+    [SerializeField] private Collider mainCollider;
+    [SerializeField] private Rigidbody hipRigidbody;   
+    private Rigidbody[] _ragdollBodies;
+    private Collider[] _ragdollColliders;
+
     [Header("Attack Manager")]
     [SerializeField] private float sightRange = 10f;
     [SerializeField] private float attackRange = 2f;
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private Transform player;
     [SerializeField] private int AttkDMG = 10;
+
+    [SerializeField] private float wantedThresholdPct = 0.3f; 
+    [SerializeField] private float forgiveSeconds = 20f;       
+    private bool _provoked = false;
+    private float _aggroExpireAt = 0f;
 
     [Header("Attack Timing")]
     [SerializeField] private float timeBetweenAttacks = 1f;
@@ -32,8 +43,9 @@ public class GuardBehaviour : MonoBehaviour
     private bool _damageThisSwing = false;
     private bool _wasInAttackTag = false;
     private float _nextAttackReadyTime = 0f;
-    private bool alreadyAttacked;
+    //private bool alreadyAttacked;
     [SerializeField] private float health = 50f;
+    [SerializeField] private float maxHealth = 50f;
 
     private bool IsDead = false;
 
@@ -91,6 +103,15 @@ public class GuardBehaviour : MonoBehaviour
         agent.stoppingDistance = attackRange * 0.9f;
         agent.autoBraking = true;
         agent.updateRotation = false;
+
+        if (!mainCollider) mainCollider = GetComponent<Collider>();
+
+        _ragdollBodies = GetComponentsInChildren<Rigidbody>(true);
+        _ragdollColliders = GetComponentsInChildren<Collider>(true);
+        SetRagdoll(false);
+
+        if (maxHealth <= 0f) maxHealth = Mathf.Max(1f, health);
+        health = Mathf.Clamp(health, 1f, maxHealth);
     }
 
     private void Update()
@@ -98,9 +119,14 @@ public class GuardBehaviour : MonoBehaviour
         if (IsDead || player == null) return;
 
         bool canSeePlayer =  PlayerInSight();
-
-        bool mayEngage = (WorldTags.Instance != null && WorldTags.Instance.IsPlayerCriminal());
+        if (_provoked && Time.time >= _aggroExpireAt && !WorldTags.Instance.IsPlayerCriminal())
+        {
+            _provoked = false;
+        }
+        bool mayEngage = (WorldTags.Instance != null && WorldTags.Instance.IsPlayerCriminal()) || _provoked;
         bool inAttack = canSeePlayer && PlayerInAttackRange();
+
+
         
         if (mayEngage && inAttack) currentState = GuardState.Attack;
         else if (mayEngage && canSeePlayer) currentState = GuardState.Chase;
@@ -283,6 +309,15 @@ public class GuardBehaviour : MonoBehaviour
         health -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("Hit");
+        if (!WorldTags.Instance.IsPlayerCriminal())
+        {
+            _provoked = true;
+            _aggroExpireAt = Time.time + forgiveSeconds;
+        }
+        if (!WorldTags.Instance.IsPlayerCriminal() && health <= maxHealth * wantedThresholdPct)
+        {
+            WorldTags.Instance.SetPlayerWanted(true);
+        }
         if (health <= 0)
         {
             Die();
@@ -293,19 +328,16 @@ public class GuardBehaviour : MonoBehaviour
     {
         Debug.Log($"{gameObject.name} died.");
         agent.isStopped = true;
+        agent.updatePosition = false;
+        agent.updateRotation = false;
         animator.SetBool("IsDead", true);
         IsDead = true;
 
         PlayerStatsTracker.Instance?.RegisterCrime();
-
+        SetRagdoll(true);
         DropGold();
 
         Destroy(gameObject, 5f);
-    }
-
-    private void ResetAttack()
-    {
-        alreadyAttacked = false;
     }
 
     private void DropGold()
@@ -314,5 +346,23 @@ public class GuardBehaviour : MonoBehaviour
         Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
 
         InventoryManager.Instance?.AddGold(goldAmount);
+    }
+
+    private void SetRagdoll(bool enabled)
+    {
+        if (animator) animator.enabled = !enabled;
+        if (mainCollider) mainCollider.enabled = !enabled;
+
+        foreach (var rb in _ragdollBodies)
+        {
+            if (rb) rb.isKinematic = !enabled;
+        }
+        foreach (var col in _ragdollColliders)
+        {
+            if (col && col != mainCollider) col.enabled = enabled;
+        }
+
+        if (enabled && hipRigidbody)
+            hipRigidbody.AddForce(transform.forward * 1.5f, ForceMode.VelocityChange);
     }
 }
