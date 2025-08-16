@@ -367,6 +367,9 @@ MonoBehaviour:
     m_Bits: 64
   player: {fileID: 0}
   AttkDMG: 10
+  timeBetweenAttacks: 2
+  hitPercent: 0.5
+  attackStateTag: Attack
   health: 50
   walkRange: 10
   groundLayer:
@@ -376,6 +379,22 @@ MonoBehaviour:
   maxWaitTime: 3
   minGoldDrop: 5
   maxGoldDrop: 20
+  possibleDrops:
+  - item: {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
+    dropChance: 0.6
+  - item: {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
+    dropChance: 0.4
+  - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
+    dropChance: 0.1
+  - item: {fileID: 11400000, guid: 07b74291bfbdb7e4fade8d76bec901da, type: 2}
+    dropChance: 0.05
+  audioSource: {fileID: 0}
+  aggroSFX: {fileID: 8300000, guid: 023a24f62acd0794f8dc0a62784b02c9, type: 3}
+  footstepSFX: {fileID: 8300000, guid: 8ddea02a4fa185a44a04a9647195244b, type: 3}
+  stepRate: 1.4
+  attackWhooshSFX: {fileID: 8300000, guid: 756c7fed2f8cb774fb77893597d06014, type: 3}
+  hurtSFX: {fileID: 8300000, guid: 9663f607bcd53934c97a67ccd2f635db, type: 3}
+  deathSFX: {fileID: 8300000, guid: 649e2f2a1e57296459723e349647946e, type: 3}
 --- !u!95 &8240276788949117843
 Animator:
   serializedVersion: 7

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 926e8bffb31ce9b489e7b5161b47bae1, type: 3}
+  m_Name: Forgotten cache
+  m_EditorClassIdentifier: 
+  templateName: Forgotten cache
+  templateDescription: "Rumors say someone stashed supplies near an old marker. Find
+    the cache and see what\u2019s left."
+  questType: 2
+  personalityRequirement: 2
+  restrictToCriminals: 0
+  mustAvoidTowns: 0
+  targetPrefab: {fileID: 6200720779111275133, guid: 1083f87f08232f541942f4a22a00127e, type: 3}
+  questGiverPrefab: {fileID: 0}
+  requiredItem: {fileID: 0}
+  requiredWorldTag: Secret
+  requiresRemoteLocation: 0
+  baseTargetAmount: 1
+  difficultyWeight: 1
+  goldReward: 30
+  possibleItemRewards:
+  - {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
+  - {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
+  minDistanceFromPlayer: 40
+  maxDistanceFromPlayer: 300
+  requiredGiverTag: 
+  titleFormat: '{verb} {target} for {giver}'
+  descriptionFormat: '{flavor}
+
+    Location: {placeName}'
+  flavorLines: []
+  verb: Retrieve
+  targetNoun: Supplies

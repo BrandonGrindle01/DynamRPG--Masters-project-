@@ -694,6 +694,13 @@ MonoBehaviour:
   maxWaitTime: 3
   minGoldDrop: 5
   maxGoldDrop: 20
+  audioSource: {fileID: 0}
+  aggroSFX: {fileID: 8300000, guid: 2fdfa32813e72db40ab212c0707e956a, type: 3}
+  footstepSFX: {fileID: 8300000, guid: a8df3234093ab1f4fa826dd314e8d938, type: 3}
+  stepRate: 1.5
+  attackWhooshSFX: {fileID: 8300000, guid: 20ca8d07d4931db4787cf09839ad8e52, type: 3}
+  hurtSFX: {fileID: 8300000, guid: 7470c2176cc22ba4293d2e6b9a339f74, type: 3}
+  deathSFX: {fileID: 8300000, guid: 9f002294747c9824592068a03257b2e9, type: 3}
 --- !u!65 &7617073855455785558
 BoxCollider:
   m_ObjectHideFlags: 0

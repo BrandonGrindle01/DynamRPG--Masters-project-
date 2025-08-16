@@ -18,6 +18,7 @@ public class ItemCollection : MonoBehaviour
         wasStolen = true;
         Debug.Log($"Player stole {itemData.itemName} from {ownerName}");
         PlayerStatsTracker.Instance.RegisterCrime();
+        QuestService.ReportSteal(gameObject);
         OnStolenFromOwner?.Invoke(ownerName);
     }
 }

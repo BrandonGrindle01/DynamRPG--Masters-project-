@@ -15,6 +15,7 @@ namespace StarterAssets
 		public bool attack;
 		public bool openInventory;
 		public bool interact;
+		public bool openMap;
 
 		[Header("Movement Settings")]
 		public bool analogMovement;
@@ -58,6 +59,10 @@ namespace StarterAssets
 		{
 			interact = value.isPressed;
 		}
+		public void OnOpenMap(InputValue value)
+		{
+			openMap = value.isPressed;
+		}
 			
 #endif
 
@@ -95,6 +100,11 @@ namespace StarterAssets
 		public void InteractInput(bool newInteract)
 		{
 			interact = newInteract;
+		}
+		
+		public void MapInput(bool newMap)
+		{
+			openMap = newMap;
 		}
 		private void OnApplicationFocus(bool hasFocus)
 		{

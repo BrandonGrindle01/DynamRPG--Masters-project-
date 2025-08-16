@@ -98,7 +98,10 @@ public class KeyAuthorQuest : MonoBehaviour
     {
         if (currentQuest == null || currentQuest.data.questType != QuestType.Explore) return;
 
-        if (Vector3.Distance(location, currentQuest.data.questLocation) <= radius)
+        var area = currentQuest.data.runtimeLocation;
+        if (area == null) return;
+
+        if (area.Contains(location) || Vector3.Distance(location, area.Center) <= radius)
         {
             currentQuest.IncrementProgress();
         }

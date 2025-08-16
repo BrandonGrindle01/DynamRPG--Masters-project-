@@ -27,6 +27,7 @@ public class Trader : MonoBehaviour
     [Header("Farmer Settings")]
     public string ownerNameForTheftBan = "";
     private bool bannedForTheft = false;
+    public bool IsBannedForTheft => bannedForTheft;
 
     private void Awake()
     {
@@ -46,6 +47,7 @@ public class Trader : MonoBehaviour
 
     private void OnStolenFromOwner(string owner)
     {
+        Debug.Log("Comparing " + owner + " with " + ownerNameForTheftBan);
         if (traderType == TraderType.Farmer && !string.IsNullOrEmpty(ownerNameForTheftBan))
         {
             if (owner == ownerNameForTheftBan) bannedForTheft = true;
@@ -76,7 +78,11 @@ public class Trader : MonoBehaviour
                 return true;
 
             case TraderType.Blacksmith:
+                if (isCriminal) { refusalText = "We don’t serve your kind here."; return false; }
+                return true;
             case TraderType.Apothecary:
+                if (isCriminal) { refusalText = "We don’t serve your kind here."; return false; }
+                return true;
             case TraderType.TavernKeeper:
                 if (isCriminal) { refusalText = "We don’t serve your kind here."; return false; }
                 return true;

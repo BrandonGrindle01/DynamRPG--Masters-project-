@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4fcc1dc47ac18e146badb0b77801a9e2, type: 3}
+  m_Name: Talk to The town guard
+  m_EditorClassIdentifier: 
+  questName: Talk to the Town Guard
+  description: I need help dealing with some of the bandits in a nearby encampment.
+    they keep raiding some of the passing wagons. could you thin there numbers for
+    me?
+  questType: 0
+  targetAmount: 3
+  targets:
+  - {fileID: 1243687436433347626, guid: ff4aef33ac5d97e4baeb68b349505d2a, type: 3}
+  requiresAllTargetsDead: 1
+  requiredItem: {fileID: 0}
+  questIcon: {fileID: 21300000, guid: 0eb4a74d426179449aaedbb1b6697d43, type: 3}
+  goldReward: 50
+  possibleItemRewards:
+  - {fileID: 11400000, guid: 6b611ecfef7835f43b00fa49966093f1, type: 2}

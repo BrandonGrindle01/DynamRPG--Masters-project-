@@ -1872,6 +1872,24 @@ MonoBehaviour:
   maxWaitTime: 5
   minGoldDrop: 15
   maxGoldDrop: 50
+  possibleDrops:
+  - item: {fileID: 11400000, guid: 4c4bdfe331d13b24398a0d7135cd4731, type: 2}
+    dropChance: 0.4
+  - item: {fileID: 11400000, guid: 12d949587a2d23c4680f0d8f351dc733, type: 2}
+    dropChance: 0.15
+  - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
+    dropChance: 0.4
+  - item: {fileID: 11400000, guid: acc2e299383ce82488723269a3f816ac, type: 2}
+    dropChance: 0.2
+  - item: {fileID: 11400000, guid: 91fa3ed9b47d14545ac580ffb34b1fc0, type: 2}
+    dropChance: 0.1
+  audioSource: {fileID: 0}
+  aggroSFX: {fileID: 8300000, guid: 023a24f62acd0794f8dc0a62784b02c9, type: 3}
+  footstepSFX: {fileID: 8300000, guid: 8ddea02a4fa185a44a04a9647195244b, type: 3}
+  stepRate: 1.4
+  attackWhooshSFX: {fileID: 8300000, guid: 756c7fed2f8cb774fb77893597d06014, type: 3}
+  hurtSFX: {fileID: 8300000, guid: 9663f607bcd53934c97a67ccd2f635db, type: 3}
+  deathSFX: {fileID: 8300000, guid: 649e2f2a1e57296459723e349647946e, type: 3}
 --- !u!195 &6787224125261088315
 NavMeshAgent:
   m_ObjectHideFlags: 0

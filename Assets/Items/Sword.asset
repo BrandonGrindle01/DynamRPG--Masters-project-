@@ -21,5 +21,8 @@ MonoBehaviour:
   maxStack: 1
   healAmount: 0
   equipSlot: 0
-  damage: 20
+  damage: 15
   armorBonus: 0
+  basePrice: 10
+  allowSell: 1
+  isStarter: 0

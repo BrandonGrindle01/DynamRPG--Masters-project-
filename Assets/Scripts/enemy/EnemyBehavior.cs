@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.AI;
 using StarterAssets;
 using System.Collections;
+using System.Collections.Generic;
 
 public enum EnemyState { Patrol, Chase, Attack }
 [RequireComponent(typeof(NavMeshAgent))]
@@ -52,6 +53,19 @@ public class EnemyBehavior : MonoBehaviour
     [Header("Death Drops")]
     [SerializeField] private int minGoldDrop = 5;
     [SerializeField] private int maxGoldDrop = 20;
+    [SerializeField] private List<LootDrop> possibleDrops = new();
+
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    [SerializeField] private AudioClip aggroSFX;
+    [SerializeField] private AudioClip footstepSFX;
+    [SerializeField] private float stepRate = 1.4f;
+    [SerializeField] private AudioClip attackWhooshSFX;
+    [SerializeField] private AudioClip hurtSFX;
+    [SerializeField] private AudioClip deathSFX;
+
+    private float stepTimer = 0f;
 
     private IEnumerator WaitAtPoint()
     {
@@ -71,6 +85,11 @@ public class EnemyBehavior : MonoBehaviour
         animator = GetComponent<Animator>();
         player = GameObject.FindGameObjectWithTag("Player")?.transform;
 
+        if (!audioSource) audioSource = GetComponent<AudioSource>();
+        if (!audioSource) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f;
+
         agent.autoBraking = true;
         agent.updateRotation = false;
     }
@@ -80,13 +99,20 @@ public class EnemyBehavior : MonoBehaviour
         if (IsDead) return;
 
         bool playerInSight = PlayerInSight();
-
+        EnemyState prev = currentState;
         if (playerInSight && PlayerInAttackRange())
             currentState = EnemyState.Attack;
         else if (playerInSight)
             currentState = EnemyState.Chase;
         else
             currentState = EnemyState.Patrol;
+
+        if (prev != currentState)
+        {
+            if (currentState == EnemyState.Chase) 
+                audioSource.PlayOneShot(footstepSFX);
+
+        }
 
         switch (currentState)
         {
@@ -96,6 +122,29 @@ public class EnemyBehavior : MonoBehaviour
         }
 
         animator.SetFloat("Moving", agent.velocity.magnitude);
+        FootstepSFX();
+    }
+
+    private void FootstepSFX()
+    {
+        if (!footstepSFX || IsDead) return;
+
+        bool isMoving = agent.enabled && !isWaiting && agent.velocity.magnitude > 0.2f;
+
+        if (isMoving)
+        {
+            stepTimer += Time.deltaTime;
+            float interval = 1f / Mathf.Max(0.01f, stepRate);
+            if (stepTimer >= interval)
+            {
+                stepTimer = 0f;
+                if (audioSource) audioSource.PlayOneShot(footstepSFX);
+            }
+        }
+        else
+        {
+            stepTimer = 0f;
+        }
     }
 
     private bool PlayerInSight()
@@ -198,7 +247,6 @@ public class EnemyBehavior : MonoBehaviour
         }
     }
 
-    //DOUBLE CHECK LOGIC
     private void AttackPlayer()
     {
         if (player == null) return;
@@ -215,6 +263,8 @@ public class EnemyBehavior : MonoBehaviour
             _damageThisSwing = false;
             animator.ResetTrigger("Attack");
             animator.SetTrigger("Attack");
+
+            audioSource.PlayOneShot(attackWhooshSFX);
         }
 
         bool coolingDown = Time.time < _nextAttackReadyTime;
@@ -265,6 +315,7 @@ public class EnemyBehavior : MonoBehaviour
         health -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("hit");
+        audioSource.PlayOneShot(hurtSFX);
         if (health <= 0)
         {
             Die();
@@ -276,8 +327,10 @@ public class EnemyBehavior : MonoBehaviour
         Debug.Log($"{gameObject.name} died.");
         agent.isStopped = true;
         animator.SetTrigger("isDead");
+        audioSource.PlayOneShot(deathSFX);
         IsDead = true;
         DropGold();
+        TryDropLoot();
         Destroy(gameObject, 5f);
     }
 
@@ -285,7 +338,19 @@ public class EnemyBehavior : MonoBehaviour
     {
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
         InventoryManager.Instance?.AddGold(goldAmount);
+        var niceName = DialogueService.CleanName(gameObject.name);
+        DialogueService.BeginOneLiner(niceName, $"Dropped {goldAmount} gold", null, 3f, true);
+    }
 
-        DialogueService.BeginOneLiner(gameObject.name, $"Dropped {goldAmount} gold");
+    private void TryDropLoot()
+    {
+        var validDrops = possibleDrops.FindAll(d => d.item != null && Random.value <= d.dropChance);
+
+        if (validDrops.Count > 0)
+        {
+            var selected = validDrops[Random.Range(0, validDrops.Count)];
+            InventoryManager.Instance?.AddItem(selected.item, 1);
+            Debug.Log($"{gameObject.name} dropped: {selected.item.name}");
+        }
     }
 }

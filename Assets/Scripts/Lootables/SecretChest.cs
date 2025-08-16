@@ -138,7 +138,7 @@ public class SecretChest : MonoBehaviour
 
         string summary = parts.Count > 0 ? string.Join(", ", parts) : "nothing";
 
-        DialogueService.BeginOneLiner("Chest", $"You found {summary}.");
+        DialogueService.BeginOneLiner("Chest", $"You found {summary}.", null, 3f, true);
     }
 
     public void MarkAsQuestChest(string id)

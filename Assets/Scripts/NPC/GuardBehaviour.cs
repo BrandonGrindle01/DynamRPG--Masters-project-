@@ -70,6 +70,18 @@ public class GuardBehaviour : MonoBehaviour
     [SerializeField] private int minGoldDrop = 5;
     [SerializeField] private int maxGoldDrop = 20;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    [SerializeField] private AudioClip aggroSFX;
+    [SerializeField] private AudioClip footstepSFX;
+    [SerializeField] private float stepRate = 1.5f;
+    [SerializeField] private AudioClip attackWhooshSFX;
+    [SerializeField] private AudioClip hurtSFX;
+    [SerializeField] private AudioClip deathSFX;
+
+    private float stepTimer = 0f;
+
     private IEnumerator WaitAtPoint()
     {
         isWaiting = true;
@@ -104,6 +116,11 @@ public class GuardBehaviour : MonoBehaviour
         agent.autoBraking = true;
         agent.updateRotation = false;
 
+        if (!audioSource) audioSource = GetComponent<AudioSource>();
+        if (!audioSource) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f;
+
         if (!mainCollider) mainCollider = GetComponent<Collider>();
 
         _ragdollBodies = GetComponentsInChildren<Rigidbody>(true);
@@ -119,6 +136,8 @@ public class GuardBehaviour : MonoBehaviour
         if (IsDead || player == null) return;
 
         bool canSeePlayer =  PlayerInSight();
+        GuardState prev = currentState;
+
         if (_provoked && Time.time >= _aggroExpireAt && !WorldTags.Instance.IsPlayerCriminal())
         {
             _provoked = false;
@@ -132,6 +151,13 @@ public class GuardBehaviour : MonoBehaviour
         else if (mayEngage && canSeePlayer) currentState = GuardState.Chase;
         else currentState = GuardState.Patrol;
 
+        if (prev != currentState)
+        {
+            if (currentState == GuardState.Chase)
+                audioSource.PlayOneShot(footstepSFX);
+
+        }
+
         switch (currentState)
         {
             case GuardState.Patrol: Patrol(); break;
@@ -140,6 +166,29 @@ public class GuardBehaviour : MonoBehaviour
         }
 
         animator.SetFloat("MoveSpeed", agent.velocity.magnitude);
+        FootstepSFX();
+    }
+
+    private void FootstepSFX()
+    {
+        if (!footstepSFX || IsDead) return;
+
+        bool isMoving = agent.enabled && !isWaiting && agent.velocity.magnitude > 0.2f;
+
+        if (isMoving)
+        {
+            stepTimer += Time.deltaTime;
+            float interval = 1f / Mathf.Max(0.01f, stepRate);
+            if (stepTimer >= interval)
+            {
+                stepTimer = 0f;
+                if (audioSource) audioSource.PlayOneShot(footstepSFX);
+            }
+        }
+        else
+        {
+            stepTimer = 0f;
+        }
     }
 
     private bool PlayerInSight()
@@ -261,6 +310,8 @@ public class GuardBehaviour : MonoBehaviour
             _damageThisSwing = false;
             animator.ResetTrigger("Attack");
             animator.SetTrigger("Attack");
+
+            audioSource.PlayOneShot(attackWhooshSFX);
         }
 
         bool coolingDown = Time.time < _nextAttackReadyTime;
@@ -309,6 +360,7 @@ public class GuardBehaviour : MonoBehaviour
         health -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("Hit");
+        audioSource.PlayOneShot(hurtSFX);
         if (!WorldTags.Instance.IsPlayerCriminal())
         {
             _provoked = true;
@@ -331,6 +383,7 @@ public class GuardBehaviour : MonoBehaviour
         agent.updatePosition = false;
         agent.updateRotation = false;
         animator.SetBool("IsDead", true);
+        audioSource.PlayOneShot(deathSFX);
         IsDead = true;
 
         PlayerStatsTracker.Instance?.RegisterCrime();

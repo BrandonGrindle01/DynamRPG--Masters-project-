@@ -19,7 +19,8 @@ public class DynamicQuestTemplateSO : ScriptableObject
 
     [Header("Required Prefabs & Assets")]
     public GameObject targetPrefab;             
-    public GameObject questGiverPrefab;         
+    public GameObject questGiverPrefab;
+    public ItemData requiredItem;
 
     [Header("Location & Context")]
     public string requiredWorldTag;             
@@ -32,5 +33,17 @@ public class DynamicQuestTemplateSO : ScriptableObject
     [Header("Reward Settings")]
     public int goldReward = 50;
     public ItemData[] possibleItemRewards;
+
+    [Header("Placement Rules")]
+    public float minDistanceFromPlayer = 40f;
+    public float maxDistanceFromPlayer = 300f;
+    public string requiredGiverTag;
+
+    [Header("Text Tokens")]
+    public string titleFormat = "{verb} {target} for {giver}";
+    public string descriptionFormat = "{flavor}\nLocation: {placeName}";
+    public string[] flavorLines;
+    public string verb = "Retrieve";
+    public string targetNoun = "Supplies";
 }
 

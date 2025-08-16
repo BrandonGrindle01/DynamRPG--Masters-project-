@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87eaa623dd88ef44080189a27c06c9c4, type: 3}
+  m_Name: Large Potion
+  m_EditorClassIdentifier: 
+  itemName: Potion (Large)
+  itemType: 0
+  itemSprite: {fileID: 21300000, guid: ed27bbb66a075b347aa9815f5dd73240, type: 3}
+  worldPrefab: {fileID: 8387440047698847365, guid: 11e5cc2f932b8ed4ea9a5af7e869ac46, type: 3}
+  description: a powerful potion made by the grand wizard, said to heal any wound
+  stackable: 1
+  maxStack: 20
+  healAmount: 50
+  equipSlot: 0
+  damage: 0
+  armorBonus: 0
+  basePrice: 50
+  allowSell: 1
+  isStarter: 0

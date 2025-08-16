@@ -76,7 +76,7 @@ public class InventoryManager : MonoBehaviour
                 inventory.Add(new InventorySlot(item, 1));
             }
         }
-
+        QuestService.ReportCollect(item);
         RefreshUI();
     }
 
@@ -195,18 +195,15 @@ public class InventoryManager : MonoBehaviour
 
             if (slot.item.stackable && slot.quantity > 1 && slot.item.itemType != ItemData.ItemType.Equipable)
             {
-                //itemQuantity.text = slot.quantity.ToString();
                 itemQuantity.gameObject.SetActive(true);
                 quantity_tab.gameObject.SetActive(true);
             }
             else if (itemQuantity != null)
             {
-                //itemQuantity.text = "";
                 itemQuantity.gameObject.SetActive(false);
                 quantity_tab.gameObject.SetActive(false);
             }
 
-            // Assign to UI controller
             ItemController controller = obj.GetComponent<ItemController>();
             if (controller != null)
             {

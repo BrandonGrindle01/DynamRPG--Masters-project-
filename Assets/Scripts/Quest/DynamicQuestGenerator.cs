@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class DynamicQuestGenerator : MonoBehaviour
 {
+    private enum Persona { Explorer, Fighter, Criminal, Collector, Neutral }
+
     public static DynamicQuestGenerator Instance;
 
     [Header("Quest Templates")]
@@ -19,6 +21,16 @@ public class DynamicQuestGenerator : MonoBehaviour
     {
         if (Instance == null) Instance = this;
         else Destroy(gameObject);
+    }
+
+    private Persona GetPersona()
+    {
+        var s = PlayerStatsTracker.Instance;
+        if (WorldTags.Instance.IsPlayerCriminal()) return Persona.Criminal;
+        if (s.enemiesKilled > 5) return Persona.Fighter;
+        if (s.distanceTraveled > 500f || s.timeSinceLastQuest > 60f) return Persona.Explorer;
+        if (s.secretsFound > 0 || s.fightsAvoided > 3) return Persona.Collector;
+        return Persona.Neutral;
     }
 
     public void StartDynamicQuestChain(KeyQuestInstance lastKey, KeyQuestInstance upcomingKey)
@@ -38,112 +50,151 @@ public class DynamicQuestGenerator : MonoBehaviour
             return;
         }
 
-        DynamicQuestTemplateSO selectedTemplate = SelectTemplateBasedOnPlayer();
+        bool isFinal = (dynamicQuestIndex == dynamicQuestsPerKey - 1);
 
-        if (selectedTemplate == null)
+        DynamicQuestTemplateSO selectedTemplate = isFinal
+            ? SelectBridgeTemplate()
+            : SelectTemplateBasedOnPlayer();
+
+        if (!selectedTemplate)
         {
             Debug.LogWarning("No suitable quest template found.");
             return;
         }
 
-        // Build instance
-        DynamicQuestInstance newQuest = new DynamicQuestInstance();
-        newQuest.template = selectedTemplate;
-        newQuest.questName = selectedTemplate.templateName + " (Instance)";
-        newQuest.description = selectedTemplate.templateDescription;
+        GameObject giver = PickGiverForTemplate(selectedTemplate);
+        Transform loc = PickLocationForTemplate(selectedTemplate);
+        if (!loc)
+        {
+            var anchorGO = new GameObject("QuestAnchor");
+            anchorGO.transform.position = StarterAssets.FirstPersonController.instance.transform.position + new Vector3(0, 0, 25f);
+            loc = anchorGO.transform;
+        }
 
-        // Special handling for first and last in chain
+        var host = new GameObject($"DQ_{selectedTemplate.templateName}_{dynamicQuestIndex + 1}");
+        var newQuest = host.AddComponent<DynamicQuestInstance>();
+
+        newQuest.InitializeFromTemplate(selectedTemplate, loc, giver);
+
         if (dynamicQuestIndex == 0 && previousKeyQuest != null)
         {
             newQuest.description += $"\nFollow-up to: {previousKeyQuest.data.questName}";
         }
-        else if (dynamicQuestIndex == dynamicQuestsPerKey - 1 && nextKeyQuest != null)
+        else if (isFinal && nextKeyQuest != null)
         {
             newQuest.description += $"\nLeads into: {nextKeyQuest.data.questName}";
         }
 
-        AssignQuestGiver(ref newQuest);
-        AssignQuestLocation(ref newQuest);
+        if ((selectedTemplate.questType == DynamicQuestType.Kill ||
+             selectedTemplate.questType == DynamicQuestType.Assassinate) && newQuest.currentTarget)
+        {
+            if (!newQuest.currentTarget.GetComponent<QuestKillReporter>())
+                newQuest.currentTarget.AddComponent<QuestKillReporter>();
+        }
+        if (selectedTemplate.questType == DynamicQuestType.Explore && newQuest.questLocation)
+        {
+            var trigGO = new GameObject($"ExploreTrigger_{newQuest.questName}");
+            trigGO.transform.position = newQuest.questLocation.position;
+            trigGO.AddComponent<QuestExploreTrigger>().radius = 8f;
+        }
 
         currentDynamicQuest = newQuest;
         dynamicQuestIndex++;
+
+        QuestService.AssignDynamic(newQuest);
 
         Debug.Log($"[DynamicQuest] Generated: {newQuest.questName}");
         PlayerStatsTracker.Instance.ResetQuestTimer();
     }
 
-    private DynamicQuestTemplateSO SelectTemplateBasedOnPlayer()
+    private GameObject PickGiverForTemplate(DynamicQuestTemplateSO t)
     {
-        var stats = PlayerStatsTracker.Instance;
-        var filteredTemplates = new List<DynamicQuestTemplateSO>();
+        bool criminal = WorldTags.Instance.IsPlayerCriminal();
 
-        foreach (var template in questTemplates)
+        if (!string.IsNullOrEmpty(t.requiredGiverTag))
         {
-            if (template.restrictToCriminals && !WorldTags.Instance.IsPlayerCriminal()) continue;
-            if (template.mustAvoidTowns && WorldTags.Instance.IsPlayerCriminal()) continue;
+            var match = WorldTags.Instance.potentialQuestGivers
+                .FindAll(g => g && g.CompareTag(t.requiredGiverTag));
+            if (match.Count > 0) return match[Random.Range(0, match.Count)];
+        }
 
-            // Match style
-            switch (template.questType)
+        return WorldTags.Instance.GetQuestGiver(criminal) ?? WorldTags.Instance.GetQuestGiver(!criminal);
+    }
+
+    private Transform PickLocationForTemplate(DynamicQuestTemplateSO t)
+    {
+        Transform picked = null;
+
+        if (t.requiresRemoteLocation) picked = WorldTags.Instance.GetRemoteLocation();
+        else if (!string.IsNullOrEmpty(t.requiredWorldTag))
+        {
+            switch (t.requiredWorldTag.ToLower())
             {
-                case DynamicQuestType.Explore:
-                    if (stats.distanceTraveled > 500f || stats.timeSinceLastQuest > 60f)
-                        filteredTemplates.Add(template);
-                    break;
-                case DynamicQuestType.Steal:
-                    if (stats.crimesCommitted > 2)
-                        filteredTemplates.Add(template);
-                    break;
-                case DynamicQuestType.Kill:
-                    if (stats.enemiesKilled > 5)
-                        filteredTemplates.Add(template);
-                    break;
-                case DynamicQuestType.Collect:
-                    if (stats.secretsFound > 0 || stats.fightsAvoided > 3)
-                        filteredTemplates.Add(template);
-                    break;
-                default:
-                    filteredTemplates.Add(template);
-                    break;
+                case "town": picked = WorldTags.Instance.GetTownLocation(); break;
+                case "remote": picked = WorldTags.Instance.GetRemoteLocation(); break;
+                case "secret": picked = WorldTags.Instance.GetSecretLocation(); break;
+                case "bandit": picked = WorldTags.Instance.GetBanditCamp(); break;
             }
         }
 
-        if (filteredTemplates.Count == 0) return null;
-        return filteredTemplates[Random.Range(0, filteredTemplates.Count)];
+        if (!picked) picked = WorldTags.Instance.GetTownLocation()
+                     ?? WorldTags.Instance.GetRemoteLocation()
+                     ?? WorldTags.Instance.GetBanditCamp()
+                     ?? WorldTags.Instance.GetSecretLocation();
+
+        return picked;
     }
 
-    private void AssignQuestGiver(ref DynamicQuestInstance quest)
+    private DynamicQuestTemplateSO SelectBridgeTemplate()
     {
-        if (WorldTags.Instance.IsPlayerCriminal())
-        {
-            quest.questGiver = WorldTags.Instance.GetQuestGiver(true);
-        }
-        else
-        {
-            quest.questGiver = WorldTags.Instance.GetQuestGiver();
-        }
-    }
+        var persona = GetPersona();
+        bool criminal = WorldTags.Instance.IsPlayerCriminal();
+        string nextName = (nextKeyQuest != null) ? nextKeyQuest.data.questName : "";
 
-    private void AssignQuestLocation(ref DynamicQuestInstance quest)
+        foreach (var t in questTemplates)
+        {
+            if (criminal && !t.restrictToCriminals) continue;
+            if (t.mustAvoidTowns && !criminal) continue;
+
+            //bridging logic
+            if (!string.IsNullOrEmpty(nextName) && nextName.ToLower().Contains("mayor"))
+            {
+                if (criminal && t.templateName.Contains("Steal Mayor Reserve")) return t;
+                if (!criminal && persona == Persona.Explorer && t.templateName.Contains("Find Fine Wine")) return t;
+                if (!criminal && persona == Persona.Fighter && t.templateName.Contains("Defend Carriage")) return t;
+            }
+        }
+
+        return SelectTemplateBasedOnPlayer();
+    }
+    private DynamicQuestTemplateSO SelectTemplateBasedOnPlayer()
     {
-        switch (quest.questType)
-        {
-            case DynamicQuestType.Explore:
-                quest.questLocation = WorldTags.Instance.GetRemoteLocation();
-                break;
-            case DynamicQuestType.Steal:
-                quest.questLocation = WorldTags.Instance.GetTownLocation();
-                break;
-            case DynamicQuestType.Kill:
-                quest.questLocation = WorldTags.Instance.GetBanditCamp();
-                break;
-            case DynamicQuestType.Collect:
-                quest.questLocation = WorldTags.Instance.GetSecretLocation();
-                break;
-            default:
-                quest.questLocation = null;
-                break;
-        }
-    }
+        var persona = GetPersona();
+        bool criminal = WorldTags.Instance.IsPlayerCriminal();
 
+        var candidates = new List<DynamicQuestTemplateSO>();
+
+        foreach (var t in questTemplates)
+        {
+            if (criminal && t.mustAvoidTowns) continue;
+            if (!criminal && t.restrictToCriminals) continue;
+
+            bool ok = true;
+            switch (t.personalityRequirement)
+            {
+                case QuestPersonalityTag.Aggressive: ok = (persona == Persona.Fighter); break;
+                case QuestPersonalityTag.Stealthy: ok = (persona == Persona.Criminal); break;
+                case QuestPersonalityTag.Explorer: ok = (persona == Persona.Explorer); break;
+                case QuestPersonalityTag.Criminal: ok = (persona == Persona.Criminal); break;
+                case QuestPersonalityTag.Neutral: ok = true; break;
+            }
+            if (!ok) continue;
+
+            candidates.Add(t);
+        }
+
+        if (candidates.Count == 0) return null;
+        return candidates[Random.Range(0, candidates.Count)];
+    }
     public DynamicQuestInstance GetCurrentQuest() => currentDynamicQuest;
 }

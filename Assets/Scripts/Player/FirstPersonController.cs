@@ -96,9 +96,9 @@ namespace StarterAssets
         [SerializeField] private float attackDistance = 3f;
         public int attackDamage = 1;
 
-        [SerializeField] private GameObject Hitfx;
-        [SerializeField] private AudioClip swingSFX;
-        [SerializeField] private AudioClip HitSFX;
+        [SerializeField] private AudioClip attackSFX;
+        [SerializeField] private AudioClip hitSFX;
+        [SerializeField] private AudioClip deathSFX;
         int attackcount;
 
         private float _lastAttackTime = -999f;
@@ -119,6 +119,12 @@ namespace StarterAssets
         [Header("Inventory UI")]
         [SerializeField] private GameObject inventoryUI;
         public bool isInventoryOpen = false;
+
+        [Header("Map UI")]
+        [SerializeField] private GameObject MapUI;
+        public bool isMapOpen = false;
+
+        [SerializeField] private AudioClip openUISFX;
 
         [Header("Crosshairs")]
         [SerializeField] private GameObject normalCrosshair;
@@ -198,10 +204,15 @@ namespace StarterAssets
 
         private void Update()
         {
-            
+
+            if (isRespawning || _controller == null || !_controller.enabled || !gameObject.activeInHierarchy)
+            {
+                UpdateUI();
+                return;
+            }
+
             JumpAndGravity();
             GroundedCheck();
-            UpdateUI();
             
             Move();
             Attack();
@@ -211,6 +222,12 @@ namespace StarterAssets
             {
                 ToggleInventory();
                 _input.openInventory = false;
+            }
+
+            if (_input.openMap)
+            {
+                ToggleMap();
+                _input.openMap = false;
             }
 
             if (_input.interact)
@@ -233,6 +250,7 @@ namespace StarterAssets
 
         private void LateUpdate()
         {
+            if (isRespawning) return;
             CameraMovement();
         }
 
@@ -300,7 +318,7 @@ namespace StarterAssets
         private void ToggleInventory()
         {
             bool opening = !isInventoryOpen;
-
+            if (opening && openUISFX) _audioSource.PlayOneShot(openUISFX);
             if (opening)
             {
                 DialogueService.End();
@@ -383,6 +401,12 @@ namespace StarterAssets
 
         private void Move()
         {
+            if (_controller == null || !_controller.enabled || !gameObject.activeInHierarchy)
+            {
+                if (_animator) _animator.SetFloat("Running", 0f);
+                return;
+            }
+
             if (IsUiLocked())
             {
                 _controller.Move(new Vector3(0f, _verticalVelocity, 0f) * Time.deltaTime);
@@ -480,7 +504,7 @@ namespace StarterAssets
             if (_input.attack && Time.time >= _lastAttackTime + attackCooldown && !staminaExhausted)
             {
                 _animator.SetTrigger("Attack");
-
+                if (attackSFX) _audioSource.PlayOneShot(attackSFX);
                 Ray ray = new Ray(Camera.position, Camera.forward);
                 Debug.DrawRay(ray.origin, ray.direction * attackDistance, Color.red, 10f);
                 if (Physics.Raycast(ray, out RaycastHit hit, attackDistance))
@@ -494,8 +518,7 @@ namespace StarterAssets
                     var guard = hit.collider.GetComponentInParent<GuardBehaviour>();
                     if (guard != null) guard.TakeDamage(attackDamage);
 
-                    if (Hitfx != null) Instantiate(Hitfx, hit.point, Quaternion.identity);
-                    if (HitSFX != null) _audioSource.PlayOneShot(HitSFX);
+                    if (hitSFX != null) _audioSource.PlayOneShot(hitSFX);
                 }
                 PlayerStamina -= 10;
                 if (PlayerStamina <= 10f)
@@ -615,7 +638,7 @@ namespace StarterAssets
             _controller.enabled = false;
 
             if (_animator) _animator.SetTrigger("Death");
-
+            if (deathSFX) _audioSource.PlayOneShot(deathSFX);
             var immersive = GetComponent<FP_immersive>();
             if (immersive) immersive.FadeBlack(1f, deathFadeDuration, 0f, false);
 
@@ -692,6 +715,25 @@ namespace StarterAssets
                     return;
                 }
             }
+        }
+
+        private void ToggleMap()
+        {
+            bool opening = !isMapOpen;
+            if (opening && openUISFX) _audioSource.PlayOneShot(openUISFX);
+            if (opening)
+            {
+                DialogueService.End();
+                ShopService.End();
+            }
+
+            isMapOpen = opening;
+            if (MapUI) MapUI.SetActive(isMapOpen);
+
+            Cursor.lockState = isMapOpen ? CursorLockMode.None : CursorLockMode.Locked;
+            Cursor.visible = isMapOpen;
+
+            _input.cursorLocked = !isMapOpen;
         }
 
     } 

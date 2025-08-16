@@ -66,6 +66,19 @@ public class NPCBehaviour : MonoBehaviour
     [SerializeField, Range(1f, 3f)] private float fleeSpeedMultiplier = 1.5f;
     [SerializeField] private LayerMask fleeNavMask = ~0;
 
+    [Header("Audio")]
+    [SerializeField] private AudioSource audioSource;
+
+    [SerializeField] private AudioClip footstepSFX;
+    [SerializeField] private float stepRate = 1.4f;
+
+    [SerializeField] private AudioClip hurtSFX;
+    [SerializeField] private AudioClip deathSFX;
+    [SerializeField] private AudioClip panicSFX;
+
+    private float stepTimer = 0f;
+
+
     private bool inDanger;
     private float fleeTimer;
     private float baseSpeed;
@@ -84,6 +97,11 @@ public class NPCBehaviour : MonoBehaviour
 
         ragdollBodies = GetComponentsInChildren<Rigidbody>(includeInactive: true);
         ragdollColliders = GetComponentsInChildren<Collider>(includeInactive: true);
+
+        if (!audioSource) audioSource = GetComponent<AudioSource>();
+        if (!audioSource) audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 1f;
 
         baseSpeed = agent.speed;
         if (player == null)
@@ -149,6 +167,28 @@ public class NPCBehaviour : MonoBehaviour
             return;
         }
     }
+
+    private void FootstepSFX()
+    {
+        if (isDead || !footstepSFX || agent == null) { stepTimer = 0f; return; }
+
+        bool moving = agent.enabled && agent.velocity.magnitude > 0.2f && !isLoitering;
+        if (moving)
+        {
+            stepTimer += Time.deltaTime;
+            float interval = 1f / Mathf.Max(0.01f, stepRate);
+            if (stepTimer >= interval)
+            {
+                stepTimer = 0f;
+                if (audioSource) audioSource.PlayOneShot(footstepSFX);
+            }
+        }
+        else
+        {
+            stepTimer = 0f;
+        }
+    }
+
 
     private void patrol()
     {
@@ -250,6 +290,7 @@ public class NPCBehaviour : MonoBehaviour
         health -= amount;
         Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("Hit");
+        audioSource.PlayOneShot(hurtSFX);
         if (enableFleeOnHit && !inDanger)
         {
             StartCoroutine(DelayFleeAfterHit(.4f));
@@ -318,6 +359,7 @@ public class NPCBehaviour : MonoBehaviour
         if (!isDead) 
         {
             inDanger = true;
+            audioSource.PlayOneShot(panicSFX);
             fleeTimer = fleeDuration;
 
             agent.speed = baseSpeed * fleeSpeedMultiplier;
@@ -336,6 +378,7 @@ public class NPCBehaviour : MonoBehaviour
 
         PlayerStatsTracker.Instance.RegisterCrime();
         SetRagdoll(true);
+        audioSource.PlayOneShot(deathSFX);
 
         DropGold();
         TryDropLoot();
@@ -351,7 +394,6 @@ public class NPCBehaviour : MonoBehaviour
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
         Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
 
-        // Replace with your actual gold pickup or economy system:
         InventoryManager.Instance?.AddGold(goldAmount);
     }
 

@@ -23,8 +23,8 @@ public class DialogueUIController : MonoBehaviour
         DialogueService.OnAdvance += OnAdvance;
         DialogueService.OnClose += OnClose;
 
-        ShopService.OnShopOpened += _ => Hide();
-        ShopService.OnShopClosed += () => { if (DialogueService.CurrentDef != null) Show(); };
+        ShopService.OnShopOpened += OnShopOpened;
+        ShopService.OnShopClosed += OnShopClosed;
 
         if (DialogueService.CurrentDef != null && DialogueService.CurrentNode != null)
             OnOpen(DialogueService.CurrentDef, DialogueService.CurrentNode);
@@ -36,12 +36,18 @@ public class DialogueUIController : MonoBehaviour
         DialogueService.OnAdvance -= OnAdvance;
         DialogueService.OnClose -= OnClose;
 
-        ShopService.OnShopOpened -= _ => Hide();
-        ShopService.OnShopClosed -= () => { if (DialogueService.CurrentDef != null) Show(); };
+        ShopService.OnShopOpened -= OnShopOpened;
+        ShopService.OnShopClosed -= OnShopClosed;
     }
 
     private void Update()
     {
+        if (DialogueService.IsAutoClosing && Time.unscaledTime >= DialogueService.AutoCloseAt)
+        {
+            DialogueService.End();
+            return;
+        }
+
         if (DialogueService.CurrentDef != null)
         {
             bool shouldHide = false;
@@ -53,6 +59,16 @@ public class DialogueUIController : MonoBehaviour
             if (shouldHide) Hide();
             else Show();
         }
+    }
+
+    private void OnShopOpened(Trader _)
+    {
+        Hide();
+    }
+
+    private void OnShopClosed()
+    {
+        if (DialogueService.CurrentDef != null) Show();
     }
 
     private void OnOpen(DialogueDefinition def, DialogueNode node)
@@ -87,12 +103,17 @@ public class DialogueUIController : MonoBehaviour
         for (int i = 0; i < _spawned.Count; i++) if (_spawned[i]) Destroy(_spawned[i].gameObject);
         _spawned.Clear();
 
-        if (node == null || node.choices == null || node.choices.Count == 0)
+        if (node == null) return;
+
+        if (node.choices == null || node.choices.Count == 0)
         {
-            var b = Instantiate(choiceButtonPrefab, choicesContainer);
-            b.GetComponentInChildren<TextMeshProUGUI>().SetText("OK");
-            b.onClick.AddListener(DialogueService.End);
-            _spawned.Add(b);
+            if (!DialogueService.IsAutoClosing)
+            {
+                var b = Instantiate(choiceButtonPrefab, choicesContainer);
+                b.GetComponentInChildren<TextMeshProUGUI>().SetText("OK");
+                b.onClick.AddListener(DialogueService.End);
+                _spawned.Add(b);
+            }
             return;
         }
 

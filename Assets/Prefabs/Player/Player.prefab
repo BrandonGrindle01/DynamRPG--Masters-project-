@@ -1102,11 +1102,23 @@ MonoBehaviour:
   attackCooldown: 2
   attackDistance: 3
   attackDamage: 1
-  Hitfx: {fileID: 0}
-  swingSFX: {fileID: 0}
-  HitSFX: {fileID: 0}
+  attackSFX: {fileID: 0}
+  hitSFX: {fileID: 0}
+  deathSFX: {fileID: 0}
+  enableRespawn: 1
+  respawnHoldTime: 0.75
+  respawnHealthPct: 1
+  deathFadeDuration: 2.5
+  deathStateTag: Death
+  fadeInDuration: 1.2
   inventoryUI: {fileID: 0}
   isInventoryOpen: 0
+  MapUI: {fileID: 0}
+  isMapOpen: 0
+  openUISFX: {fileID: 0}
+  normalCrosshair: {fileID: 0}
+  stealCrosshair: {fileID: 0}
+  interactRange: 3
   weaponHolder: {fileID: 2618917594848713886}
   armorHolder:
   - {fileID: 5688845368240959382}
@@ -1149,6 +1161,7 @@ MonoBehaviour:
   attack: 0
   openInventory: 0
   interact: 0
+  openMap: 0
   analogMovement: 0
   cursorLocked: 1
   cursorInputForLook: 1
@@ -1269,6 +1282,8 @@ MonoBehaviour:
   footstepClips:
   - {fileID: 8300000, guid: cae04822e4c207247b2181bcca88ec90, type: 3}
   footstepDelay: 0.5
+  fade: {fileID: 0}
+  fadeSpeed: 3
 --- !u!82 &7372978138846118239
 AudioSource:
   m_ObjectHideFlags: 0

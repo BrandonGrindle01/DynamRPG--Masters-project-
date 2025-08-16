@@ -33,8 +33,20 @@ public class DynamicQuestInstance : MonoBehaviour
 
         if (template.targetPrefab != null)
         {
-            currentTarget = Instantiate(template.targetPrefab, questLocation);
+            currentTarget = Instantiate(template.targetPrefab, questLocation.position, Quaternion.identity);
         }
+    }
+
+    private void LateUpdate()
+    {
+        if (currentTarget)
+            MapService.AddOrUpdate(new MapMarkerData
+            {
+                id = $"q:{questName}:target",
+                worldPos = currentTarget.transform.position,
+                type = MapIconType.QuestTarget,
+                isActive = true
+            });
     }
 
     public void RegisterProgress()

@@ -504,8 +504,16 @@ MonoBehaviour:
   minGoldDrop: 5
   maxGoldDrop: 20
   possibleDrops:
-  - item: {fileID: 0}
-    dropChance: 0
+  - item: {fileID: 11400000, guid: 6b611ecfef7835f43b00fa49966093f1, type: 2}
+    dropChance: 0.1
+  - item: {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
+    dropChance: 0.7
+  - item: {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
+    dropChance: 0.4
+  - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
+    dropChance: 0.1
+  - item: {fileID: 11400000, guid: 91fa3ed9b47d14545ac580ffb34b1fc0, type: 2}
+    dropChance: 0.01
   agent: {fileID: 0}
   walkPoint: {x: 0, y: 0, z: 0}
   walkrange: 10
@@ -527,6 +535,12 @@ MonoBehaviour:
   fleeNavMask:
     serializedVersion: 2
     m_Bits: 4294967295
+  audioSource: {fileID: 0}
+  footstepSFX: {fileID: 8300000, guid: 9bca6e4cb343ccb44ba38848968fa13f, type: 3}
+  stepRate: 1.4
+  hurtSFX: {fileID: 8300000, guid: fbcb49fc455c79640b7ae954a61208d5, type: 3}
+  deathSFX: {fileID: 8300000, guid: bf42290330319984e88588e677d79c84, type: 3}
+  panicSFX: {fileID: 8300000, guid: e4513760ee8efcc40916b8faa09aae57, type: 3}
 --- !u!195 &-2549600887106866780
 NavMeshAgent:
   m_ObjectHideFlags: 0

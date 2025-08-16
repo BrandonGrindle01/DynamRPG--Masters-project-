@@ -102,5 +102,23 @@ public class WorldTags : MonoBehaviour
             return filtered[Random.Range(0, filtered.Count)];
         return null;
     }
+
+    public void SetFlag(string tag)
+    {
+        if (string.IsNullOrEmpty(tag)) return;
+        _flags.Add(tag);
+    }
+
+    public void ClearFlag(string tag)
+    {
+        if (string.IsNullOrEmpty(tag)) return;
+        _flags.Remove(tag);
+    }
+
+    public bool HasFlag(string tag)
+    {
+        if (string.IsNullOrEmpty(tag)) return false;
+        return _flags.Contains(tag);
+    }
 }
 

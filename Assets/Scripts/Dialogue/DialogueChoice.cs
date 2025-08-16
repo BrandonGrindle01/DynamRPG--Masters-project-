@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum DialogueAction { None, OpenShop, OfferQuest, Close }
+public enum DialogueAction { None, OpenShop, OfferQuest, Close, AcceptQuest, TurnInQuest }
 
 [Serializable]
 public class DialogueChoice

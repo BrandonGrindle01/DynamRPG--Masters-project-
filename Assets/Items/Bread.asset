@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87eaa623dd88ef44080189a27c06c9c4, type: 3}
+  m_Name: Bread
+  m_EditorClassIdentifier: 
+  itemName: Bread
+  itemType: 0
+  itemSprite: {fileID: 21300000, guid: fb4bb4300c2545e4188ef1a4698a142a, type: 3}
+  worldPrefab: {fileID: 2151501843671992723, guid: c15c2bdc6078f984bbcd5353edee6fde, type: 3}
+  description: 
+  stackable: 1
+  maxStack: 99
+  healAmount: 10
+  equipSlot: 0
+  damage: 0
+  armorBonus: 0
+  basePrice: 8
+  allowSell: 1
+  isStarter: 0

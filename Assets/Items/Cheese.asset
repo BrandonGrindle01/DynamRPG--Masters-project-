@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87eaa623dd88ef44080189a27c06c9c4, type: 3}
+  m_Name: Cheese
+  m_EditorClassIdentifier: 
+  itemName: Cheese
+  itemType: 0
+  itemSprite: {fileID: 21300000, guid: 2250c1e51a6bc1647881be690c339f7d, type: 3}
+  worldPrefab: {fileID: 6803668569067887388, guid: 80ce5750bd4f1f74eaacd2dd5210f317, type: 3}
+  description: Wonderfull cheese!
+  stackable: 1
+  maxStack: 99
+  healAmount: 12
+  equipSlot: 0
+  damage: 0
+  armorBonus: 0
+  basePrice: 12
+  allowSell: 1
+  isStarter: 0
