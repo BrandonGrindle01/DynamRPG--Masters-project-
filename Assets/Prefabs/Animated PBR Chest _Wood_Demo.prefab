@@ -212,7 +212,8 @@ MonoBehaviour:
   chestId: 
   countAsSecret: 1
   isQuestChest: 0
-  questId: 
+  questTokenId: 
+  questCompleteDelay: 3
 --- !u!65 &-2371277244934335090
 BoxCollider:
   m_ObjectHideFlags: 0

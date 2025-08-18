@@ -22,10 +22,8 @@ public static class DialogueService
         CurrentOwner = owner;
         CurrentNode = def?.FindNode(startId ?? def?.startNodeId);
 
-        if (autoCloseSeconds >= 0f)
-            AutoCloseAt = Time.unscaledTime + autoCloseSeconds;
-        else
-            AutoCloseAt = -1f;
+        if (autoCloseSeconds >= 0f) AutoCloseAt = Time.unscaledTime + autoCloseSeconds;
+        else AutoCloseAt = -1f;
 
         if (CurrentDef == null || CurrentNode == null)
         {
@@ -39,34 +37,98 @@ public static class DialogueService
 
     public static void Choose(DialogueChoice choice)
     {
-        if (CurrentDef == null || CurrentNode == null || choice == null) return;
+        if (choice == null) return;
+
+        var owner = CurrentOwner;
+        var def = CurrentDef;
+        var node = CurrentNode;
+
+        if (def == null || node == null || owner == null)
+        {
+            End();
+            return;
+        }
 
         switch (choice.action)
         {
             case DialogueAction.OpenShop:
-                OnClose?.Invoke();
-                if (CurrentOwner && !CurrentOwner.TryOpenShop())
                 {
-                    BeginOneLiner(CurrentOwner.NpcDisplayName, CurrentOwner.RefusalTextOrDefault(), CurrentOwner, 3f, true);
+                    OnClose?.Invoke();
+                    if (!owner.TryOpenShop())
+                        BeginOneLiner(owner.NpcDisplayName, owner.RefusalTextOrDefault(), owner, 3f, true);
+                    CurrentDef = null; CurrentNode = null; CurrentOwner = null; AutoCloseAt = -1f;
+                    return;
                 }
-                CurrentDef = null; 
-                CurrentNode = null; 
-                CurrentOwner = null;
-                return;
 
             case DialogueAction.OfferQuest:
-                CurrentOwner?.OfferQuest();
-                return;
+                {
+                    owner.OfferQuest();
+                    return;
+                }
+
             case DialogueAction.AcceptQuest:
-                DialogueService.OnClose?.Invoke();
-                CurrentOwner?.OfferQuest();
-                CurrentDef = null; CurrentNode = null; CurrentOwner = null;
-                return;
+                {
+                    var npc = owner.gameObject;
+                    if (!QuestService.HasPendingFor(npc))
+                    {
+                        owner.OfferQuest();
+                        return;
+                    }
+
+                    if (!QuestService.AcceptPendingOffer(npc))
+                    {
+                        var ctx = KeyQuestManager.Instance ? KeyQuestManager.Instance.Current?.contextTag : null;
+                        DynamicQuestGenerator.Instance?.GenerateNextDynamicQuest(ctx, assign: true, forcedGiver: npc);
+                    }
+
+                    var built = DialogueQuestBuilder.BuildForNPC(owner.definition, owner);
+                    Begin(built, owner, "auto_accept", autoCloseSeconds: 2f);
+                    return;
+                }
 
             case DialogueAction.TurnInQuest:
-                DialogueService.OnClose?.Invoke();
-                CurrentDef = null; CurrentNode = null; CurrentOwner = null;
-                return;
+                {
+                    var npc = owner.gameObject;
+                    if (!QuestService.TryTurnIn(npc))
+                    {
+                        var built = DialogueQuestBuilder.BuildForNPC(owner.definition, owner);
+                        Begin(built, owner, owner.definition.startNodeId);
+                    }
+                    return;
+                }
+
+            case DialogueAction.ReportKeyTalkedTo:
+                {
+                    QuestService.ReportKeyTalkedTo(owner.gameObject);
+                    var built = DialogueQuestBuilder.BuildForNPC(owner.definition, owner);
+                    Begin(built, owner, "auto_key_talk", autoCloseSeconds: 2f);
+                    return;
+                }
+
+            case DialogueAction.TurnInKey:
+                {
+                    var npc = owner.gameObject;
+                    QuestService.ReportKeyTalkedTo(npc);
+                    QuestService.TryTurnInKey(npc);
+                    KeyQuestManager.Instance?.OfferNextBridge(npc);
+
+                    var built = DialogueQuestBuilder.BuildForNPC(owner.definition, owner);
+                    Begin(built, owner, "auto_offer");
+                    return;
+                }
+
+            case DialogueAction.HelpKeyAndOffer:
+                {
+                    var npc = owner.gameObject;
+                    QuestService.ReportKeyTalkedTo(npc);
+                    QuestService.TryTurnInKey(npc);
+
+                    var built = DialogueQuestBuilder.BuildForNPC(owner.definition, owner);
+                    Begin(built, owner, "auto_offer");
+                    return;
+                }
+
+
             case DialogueAction.Close:
                 End();
                 return;
@@ -74,14 +136,13 @@ public static class DialogueService
 
         if (string.IsNullOrWhiteSpace(choice.nextNodeId)) { End(); return; }
 
-        var next = CurrentDef.FindNode(choice.nextNodeId);
+        var next = def.FindNode(choice.nextNodeId);
         if (next == null) { End(); return; }
 
         CurrentNode = next;
         AutoCloseAt = -1f;
-        OnAdvance?.Invoke(CurrentDef, CurrentNode);
+        OnAdvance?.Invoke(def, next);
     }
-
     public static void End()
     {
         CurrentDef = null;
@@ -100,9 +161,7 @@ public static class DialogueService
         var node = new DialogueNode { id = "start", line = line };
 
         if (!noButton && autoCloseSeconds < 0f)
-        {
             node.choices.Add(new DialogueChoice { label = "OK", action = DialogueAction.Close });
-        }
 
         tmp.nodes.Add(node);
         Begin(tmp, owner, "start", autoCloseSeconds);

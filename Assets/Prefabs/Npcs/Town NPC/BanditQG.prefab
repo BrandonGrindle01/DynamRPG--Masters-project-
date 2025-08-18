@@ -2214,7 +2214,7 @@ GameObject:
   - component: {fileID: 6232158495938025296}
   m_Layer: 0
   m_Name: BanditQG
-  m_TagString: Untagged
+  m_TagString: Bandit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2295,7 +2295,7 @@ MonoBehaviour:
   refusalText: what? Im busy, get lost
   stock: []
   sellbackMultiplier: 0.5
-  ownerNameForTheftBan: 
+  ownerNameForTheftBan: bandit_QG
 --- !u!1 &8958554180457648793
 GameObject:
   m_ObjectHideFlags: 0

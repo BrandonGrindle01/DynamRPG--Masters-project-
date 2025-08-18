@@ -435,7 +435,7 @@ GameObject:
   - component: {fileID: 8825974342551206478}
   m_Layer: 0
   m_Name: NPC
-  m_TagString: Untagged
+  m_TagString: Town
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

@@ -129,6 +129,7 @@ namespace StarterAssets
         [Header("Crosshairs")]
         [SerializeField] private GameObject normalCrosshair;
         [SerializeField] private GameObject stealCrosshair;
+        [SerializeField] private GameObject collectCrosshair;
         [SerializeField] private float interactRange = 3f;
 
         [Header("equipment manager")]
@@ -282,28 +283,21 @@ namespace StarterAssets
 
         private void HandleDialogueOpen(DialogueDefinition d, DialogueNode n)
         {
-            // If shop is open, close it (single-UI rule). Optional:
-            // ShopService.End();
-            Debug.Log("Opening Dialogue");
             PushUiLock();
         }
 
         private void HandleDialogueClose()
         {
-            Debug.Log("closing Dialogue");
             PopUiLock();
         }
 
         private void HandleShopOpen(Trader t)
         {
-            Debug.Log("Opening shop");
-            //DialogueService.End();
             PushUiLock();
         }
 
         private void HandleShopClose()
         {
-            Debug.Log("closing shop");
             PopUiLock();
         }
 
@@ -494,7 +488,7 @@ namespace StarterAssets
                 _input.attack = false;
                 return;
             }
-            if (weaponItem.itemName != "Sword")
+            if (weaponItem.equipSlot != ItemData.EquipmentSlot.Weapon)
             {
                 Debug.Log("You need to equip a sword to attack.");
                 _input.attack = false;
@@ -701,6 +695,7 @@ namespace StarterAssets
         private void UpdateLookHints()
         {
             if (stealCrosshair) stealCrosshair.SetActive(false);
+            if (collectCrosshair) collectCrosshair.SetActive(false);
             if (normalCrosshair) normalCrosshair.SetActive(true);
             if (IsUiLocked()) return;
 
@@ -708,10 +703,18 @@ namespace StarterAssets
             if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
             {
                 var pickup = hit.collider.GetComponent<ItemCollection>();
-                if (pickup != null && pickup.isOwned && !pickup.wasStolen)
+                if (pickup != null)
                 {
-                    if (stealCrosshair) stealCrosshair.SetActive(true);
-                    if (normalCrosshair) normalCrosshair.SetActive(false);
+                    if (pickup.isOwned && !pickup.wasStolen)
+                    {
+                        if (stealCrosshair) stealCrosshair.SetActive(true);
+                        if (normalCrosshair) normalCrosshair.SetActive(false);
+                    }
+                    else
+                    {
+                        if (collectCrosshair) collectCrosshair.SetActive(true);
+                        if (normalCrosshair) normalCrosshair.SetActive(false);
+                    }
                     return;
                 }
             }

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using System;
 using System.Linq;
 using StarterAssets;
 using static ItemData;
@@ -9,6 +10,17 @@ using static ItemData;
 public class InventoryManager : MonoBehaviour
 {
     public static InventoryManager Instance;
+
+    [Serializable]
+    public class LootEntry
+    {
+        public ItemData item;
+        public int min = 1;
+        public int max = 1;
+        [Range(0f, 1f)] public float chance = 1f;
+        public float weight = 1f;
+    }
+
 
     [Header("Inventory")]
     public List<InventorySlot> inventory = new List<InventorySlot>();

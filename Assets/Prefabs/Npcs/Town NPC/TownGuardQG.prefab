@@ -1481,9 +1481,10 @@ GameObject:
   - component: {fileID: 5979027547558081795}
   - component: {fileID: 280770656973739676}
   - component: {fileID: 6057302680047938142}
+  - component: {fileID: -5535690589643519684}
   m_Layer: 0
   m_Name: TownGuardQG
-  m_TagString: Untagged
+  m_TagString: Town
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1548,6 +1549,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.47419593, y: 1.7371948, z: 0.3545064}
   m_Center: {x: -0.010234803, y: 0.8374443, z: 0.033907194}
+--- !u!114 &-5535690589643519684
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4963712176758567502}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c609c23cd247ead489cbaa1d57ddd332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: town_guard
 --- !u!1 &5183759266256748718
 GameObject:
   m_ObjectHideFlags: 0

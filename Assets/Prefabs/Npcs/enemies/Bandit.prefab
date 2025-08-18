@@ -301,7 +301,7 @@ GameObject:
   - component: {fileID: -4213794887084275500}
   m_Layer: 0
   m_Name: Bandit
-  m_TagString: Untagged
+  m_TagString: Bandit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -367,6 +367,10 @@ MonoBehaviour:
     m_Bits: 64
   player: {fileID: 0}
   AttkDMG: 10
+  ignoreHitDuringAttack: 1
+  ignoreHitDuringAttackWindup: 1
+  attackUninterruptibleWindow: 0.6
+  hitReactCooldown: 0.35
   timeBetweenAttacks: 2
   hitPercent: 0.5
   attackStateTag: Attack
@@ -377,17 +381,35 @@ MonoBehaviour:
     m_Bits: 8
   minWaitTime: 1
   maxWaitTime: 3
-  minGoldDrop: 5
-  maxGoldDrop: 20
-  possibleDrops:
-  - item: {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
-    dropChance: 0.6
-  - item: {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
-    dropChance: 0.4
+  rolls: 1
+  allowDuplicates: 1
+  loot:
+  - item: {fileID: 11400000, guid: 6b611ecfef7835f43b00fa49966093f1, type: 2}
+    min: 1
+    max: 2
+    chance: 0.1
+    weight: 5
   - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
-    dropChance: 0.1
+    min: 1
+    max: 3
+    chance: 0.3
+    weight: 6
+  - item: {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
+    min: 1
+    max: 5
+    chance: 0.7
+    weight: 10
+  - item: {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
+    min: 1
+    max: 6
+    chance: 0.888
+    weight: 10
   - item: {fileID: 11400000, guid: 07b74291bfbdb7e4fade8d76bec901da, type: 2}
-    dropChance: 0.05
+    min: 1
+    max: 6
+    chance: 0.05
+    weight: 1
+  bonusGold: 15
   audioSource: {fileID: 0}
   aggroSFX: {fileID: 8300000, guid: 023a24f62acd0794f8dc0a62784b02c9, type: 3}
   footstepSFX: {fileID: 8300000, guid: 8ddea02a4fa185a44a04a9647195244b, type: 3}

@@ -1814,9 +1814,10 @@ GameObject:
   - component: {fileID: 6787224125261088315}
   - component: {fileID: 7517903139688211504}
   - component: {fileID: -8115344424224455177}
+  - component: {fileID: 8118748814138407984}
   m_Layer: 0
   m_Name: Roak (Bandit leader)
-  m_TagString: Untagged
+  m_TagString: Bandit
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1860,6 +1861,10 @@ MonoBehaviour:
     m_Bits: 64
   player: {fileID: 0}
   AttkDMG: 18
+  ignoreHitDuringAttack: 1
+  ignoreHitDuringAttackWindup: 1
+  attackUninterruptibleWindow: 0.6
+  hitReactCooldown: 0.35
   timeBetweenAttacks: 3
   hitPercent: 0.5
   attackStateTag: Attack
@@ -1870,19 +1875,35 @@ MonoBehaviour:
     m_Bits: 8
   minWaitTime: 1
   maxWaitTime: 5
-  minGoldDrop: 15
-  maxGoldDrop: 50
-  possibleDrops:
-  - item: {fileID: 11400000, guid: 4c4bdfe331d13b24398a0d7135cd4731, type: 2}
-    dropChance: 0.4
+  rolls: 1
+  allowDuplicates: 1
+  loot:
   - item: {fileID: 11400000, guid: 12d949587a2d23c4680f0d8f351dc733, type: 2}
-    dropChance: 0.15
-  - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
-    dropChance: 0.4
-  - item: {fileID: 11400000, guid: acc2e299383ce82488723269a3f816ac, type: 2}
-    dropChance: 0.2
+    min: 1
+    max: 1
+    chance: 0.2
+    weight: 1
+  - item: {fileID: 11400000, guid: 4c4bdfe331d13b24398a0d7135cd4731, type: 2}
+    min: 2
+    max: 5
+    chance: 0.6
+    weight: 10
   - item: {fileID: 11400000, guid: 91fa3ed9b47d14545ac580ffb34b1fc0, type: 2}
-    dropChance: 0.1
+    min: 1
+    max: 3
+    chance: 0.25
+    weight: 3
+  - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
+    min: 3
+    max: 5
+    chance: 0.6
+    weight: 10
+  - item: {fileID: 11400000, guid: acc2e299383ce82488723269a3f816ac, type: 2}
+    min: 1
+    max: 1
+    chance: 0.3
+    weight: 2
+  bonusGold: 0
   audioSource: {fileID: 0}
   aggroSFX: {fileID: 8300000, guid: 023a24f62acd0794f8dc0a62784b02c9, type: 3}
   footstepSFX: {fileID: 8300000, guid: 8ddea02a4fa185a44a04a9647195244b, type: 3}
@@ -1955,6 +1976,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.66132694, y: 1.9187609, z: 0.56566143}
   m_Center: {x: 0.018144518, y: 0.90161604, z: -0.0124646425}
+--- !u!114 &8118748814138407984
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4715604338681607657}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c609c23cd247ead489cbaa1d57ddd332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: bandit_leader
 --- !u!1 &4894173131084074542
 GameObject:
   m_ObjectHideFlags: 0

@@ -52,6 +52,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Guard
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 35b517dfa7ebabd4baa8753286f6f79d, type: 3}
+      propertyPath: m_TagString
+      value: Guard
+      objectReference: {fileID: 0}
     - target: {fileID: 5866666021909216657, guid: 35b517dfa7ebabd4baa8753286f6f79d, type: 3}
       propertyPath: m_Controller
       value: 

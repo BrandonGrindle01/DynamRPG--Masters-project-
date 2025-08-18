@@ -3466,7 +3466,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4395045176784062}
-  - component: {fileID: 8655873165102722230}
+  - component: {fileID: 5086668655195938683}
   m_Layer: 0
   m_Name: House
   m_TagString: Untagged
@@ -3490,8 +3490,8 @@ Transform:
   - {fileID: 4861311329801148}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!64 &8655873165102722230
-MeshCollider:
+--- !u!65 &5086668655195938683
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -3508,10 +3508,9 @@ MeshCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 0}
+  serializedVersion: 3
+  m_Size: {x: 29.973524, y: 29.45675, z: 29.880724}
+  m_Center: {x: -14.48676, y: 14.228374, z: -14.44036}
 --- !u!1 &1930116517117172
 GameObject:
   m_ObjectHideFlags: 0

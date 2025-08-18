@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 87eaa623dd88ef44080189a27c06c9c4, type: 3}
+  m_Name: Parcel
+  m_EditorClassIdentifier: 
+  itemName: Parcel
+  itemType: 2
+  itemSprite: {fileID: 21300000, guid: e4ec03b9de0039e4b95de59085d5431f, type: 3}
+  worldPrefab: {fileID: 5775554537767136791, guid: 9b3b48db54310a448bcfac820322b118, type: 3}
+  description: a medium sized parcel
+  stackable: 0
+  maxStack: 99
+  healAmount: 0
+  equipSlot: 0
+  damage: 0
+  armorBonus: 0
+  basePrice: 0
+  allowSell: 0
+  isStarter: 0

@@ -105,7 +105,12 @@ public class PlayerStatsTracker : MonoBehaviour
     }
 
     public void RegisterEnemyKill() => enemiesKilled++;
-    public void RegisterCrime() => crimesCommitted++;
+    public void RegisterCrime() 
+    { 
+        crimesCommitted++;
+        WorldTags.Instance?.SetPlayerWanted(true);  
+        QuestService.NotifyPlayerCommittedCrime();
+    }
     public void RegisterFightAvoided() => fightsAvoided++;
     public void RegisterSecretFound() => secretsFound++;
     public void ResetQuestTimer() => timeSinceLastQuest = 0f;

@@ -250,16 +250,6 @@ public class NPCBehaviour : MonoBehaviour
                 return;
             }
         }
-        //if (stallPoints.Count > 0 && Random.value < 0.5f)
-        //{
-        //    Transform randomStall = stallPoints[Random.Range(0, stallPoints.Count)];
-        //    if (randomStall != null && NavMesh.SamplePosition(randomStall.position, out hit, 2f, NavMesh.AllAreas))
-        //    {
-        //        walkPoint = hit.position;
-        //        walkpointSet = true;
-        //        return;
-        //    }
-        //}
         for (int i = 0; i < 10; i++)
         {
             Vector3 randomPoint = transform.position + new Vector3(Random.Range(-walkrange, walkrange), 0, Random.Range(-walkrange, walkrange));
@@ -288,7 +278,6 @@ public class NPCBehaviour : MonoBehaviour
         if (isDead) return;
 
         health -= amount;
-        Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("Hit");
         audioSource.PlayOneShot(hurtSFX);
         if (enableFleeOnHit && !inDanger)
@@ -374,8 +363,6 @@ public class NPCBehaviour : MonoBehaviour
         if (deathEffect != null)
             Instantiate(deathEffect, transform.position, Quaternion.identity);
 
-        Debug.Log("Player committed a crime — murder!");
-
         PlayerStatsTracker.Instance.RegisterCrime();
         SetRagdoll(true);
         audioSource.PlayOneShot(deathSFX);
@@ -392,7 +379,6 @@ public class NPCBehaviour : MonoBehaviour
     private void DropGold()
     {
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
-        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
 
         InventoryManager.Instance?.AddGold(goldAmount);
     }
@@ -405,7 +391,6 @@ public class NPCBehaviour : MonoBehaviour
         {
             var selected = validDrops[Random.Range(0, validDrops.Count)];
             InventoryManager.Instance?.AddItem(selected.item, 1);
-            Debug.Log($"{gameObject.name} dropped: {selected.item.name}");
         }
     }
 }

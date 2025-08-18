@@ -10,7 +10,6 @@ GameObject:
   m_Component:
   - component: {fileID: 6350804971043890700}
   - component: {fileID: 8402397047333749867}
-  - component: {fileID: 633700015295555229}
   - component: {fileID: 6886145331967130356}
   m_Layer: 0
   m_Name: BanditLoc
@@ -52,22 +51,6 @@ MonoBehaviour:
   color: {r: 1, g: 0, b: 0, a: 1}
   updateEveryFrame: 0
   trackRotation: 0
---- !u!114 &633700015295555229
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 746412222660571280}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8a64a26e0fae4f543abb75808df3b9a4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  displayName: Bandit camp
-  gizmoColor: {r: 0, g: 0.8, b: 1, a: 0.35}
-  sphere: {fileID: 6886145331967130356}
-  box: {fileID: 0}
 --- !u!135 &6886145331967130356
 SphereCollider:
   m_ObjectHideFlags: 0

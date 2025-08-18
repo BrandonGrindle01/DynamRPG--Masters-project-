@@ -1,0 +1,36 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31549c13a577b2e45aeca161cff4c487, type: 3}
+  m_Name: Meet the town Guard
+  m_EditorClassIdentifier: 
+  id: meet-guard
+  title: Meet the town guard
+  description: you are an adventurer, just visiting the town of zelkret. the town
+    guard has asked to meet with you.
+  requiredWorldFlags: []
+  setFlagsOnStart: []
+  setFlagsOnComplete:
+  - met-guard
+  minDynamicBetween: 0
+  maxDynamicBetween: 0
+  questGiverRefId: town_guard
+  questGiver: {fileID: 0}
+  contextTag: bandit
+  completionType: 0
+  targetEnemyRefId: 
+  targetEnemy: {fileID: 0}
+  targetLocationRefId: 
+  targetLocation: {fileID: 0}
+  reachRadius: 3
+  requiresTurnIn: 1
+  nextBridgeGiverRule: 1
+  nextBridgeGiverRefId: 
