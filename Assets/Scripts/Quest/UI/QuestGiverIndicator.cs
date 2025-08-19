@@ -17,11 +17,16 @@ public class QuestGiverIndicator : MonoBehaviour
     public Vector3 exclamationRotationOffset = Vector3.zero;
     public Vector3 questionRotationOffset = new Vector3(90f, 0f, 0f);
 
-    [Header("Beacon Settings")]
+    [Header("Beacon visuals (assign the asset created via Create?Quests?Beacon Params)")]
     public bool spawnBeacon = true;
     public float beamHeight = 20f;
     public float beamRadius = 0.05f;
     [Range(0.05f, 1f)] public float beamAlpha = 0.15f;
+
+    [Header("Beacon Params (SO)")]
+    public QuestBeaconParamsAsset beaconParams;
+
+    public void AssignBeaconParams(QuestBeaconParamsAsset p) => beaconParams = p;
 
     private GameObject _excl;
     private GameObject _ques;
@@ -64,8 +69,18 @@ public class QuestGiverIndicator : MonoBehaviour
     {
         if (!spawnBeacon) return;
         if (_beacon) return;
-        var p = new QuestBeaconParams { yStart = heightOffset + .5f, height = beamHeight, radius = beamRadius, alpha = beamAlpha };
-        _beacon = QuestBeacon.Create(anchor ? anchor : transform, p);
+
+        var matTemplate = beaconParams ? beaconParams.materialTemplate : null;
+        float yStart = heightOffset + 0.5f;
+
+        _beacon = QuestBeacon.CreateBeam(
+            anchor ? anchor : transform,
+            yStart,
+            beamHeight,
+            beamRadius,
+            beamAlpha,
+            matTemplate
+        );
         if (_beacon) _beacon.SetActive(false);
     }
 
@@ -88,7 +103,14 @@ public class QuestGiverIndicator : MonoBehaviour
     {
         Ensure(exclamationPrefab, ref _excl);
         EnsureBeacon();
-        if (_beacon) _beacon.SetActive(true);
+
+        if (_beacon)
+        {
+            var c = beaconParams ? beaconParams.normalColor : Color.cyan;
+            c.a = beamAlpha;
+            QuestBeacon.SetBeaconColor(_beacon, c);
+            _beacon.SetActive(true);
+        }
         if (_excl) _excl.SetActive(true);
         if (_ques) _ques.SetActive(false);
     }
@@ -97,11 +119,17 @@ public class QuestGiverIndicator : MonoBehaviour
     {
         Ensure(questionPrefab, ref _ques);
         EnsureBeacon();
-        if (_beacon) _beacon.SetActive(true);
+
+        if (_beacon)
+        {
+            var c = beaconParams ? beaconParams.questionColor : Color.yellow;
+            c.a = beamAlpha;
+            QuestBeacon.SetBeaconColor(_beacon, c);
+            _beacon.SetActive(true);
+        }
         if (_ques) _ques.SetActive(true);
         if (_excl) _excl.SetActive(false);
     }
-
 
     public void HideAll()
     {

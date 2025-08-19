@@ -38,13 +38,13 @@ public class QuestDebugHUD : MonoBehaviour
     {
         _scroll = GUILayout.BeginScrollView(_scroll, GUILayout.Height(_rect.height - 32));
 
-        var pend = QuestDiagnostics.lastPending;
-        var curr = QuestDiagnostics.lastCurrent;
+        var pend = RuntimeDevConsole .lastPending;
+        var curr = RuntimeDevConsole .lastCurrent;
 
         GUILayout.Label("Dialogue", _hdr);
-        GUILayout.Label($"Owner: {QuestDiagnostics.lastDialogueOwner}");
-        GUILayout.Label($"Node:  {QuestDiagnostics.lastDialogueNode}");
-        GUILayout.Label($"Action:{QuestDiagnostics.lastDialogueAction}");
+        GUILayout.Label($"Owner: {RuntimeDevConsole .lastDialogueOwner}");
+        GUILayout.Label($"Node:  {RuntimeDevConsole .lastDialogueNode}");
+        GUILayout.Label($"Action:{RuntimeDevConsole .lastDialogueAction}");
         GUILayout.Space(6);
 
         GUILayout.Label("Key Quest", _hdr);
@@ -75,23 +75,23 @@ public class QuestDebugHUD : MonoBehaviour
 
         GUILayout.Space(6);
         GUILayout.Label("Picker", _hdr);
-        if (QuestDiagnostics.lastWeights.Count > 0)
+        if (RuntimeDevConsole .lastWeights.Count > 0)
         {
-            foreach (var kv in QuestDiagnostics.lastWeights.OrderByDescending(k => k.Value))
+            foreach (var kv in RuntimeDevConsole .lastWeights.OrderByDescending(k => k.Value))
                 GUILayout.Label($"{kv.Key,-8} : {kv.Value:0.00}", _mono);
-            GUILayout.Label($"Pick   : {QuestDiagnostics.lastPick}", _mono);
+            GUILayout.Label($"Pick   : {RuntimeDevConsole .lastPick}", _mono);
         }
         else GUILayout.Label("No weight data yet.");
 
-        if (!string.IsNullOrEmpty(QuestDiagnostics.lastSkipOrRedirect))
+        if (!string.IsNullOrEmpty(RuntimeDevConsole .lastSkipOrRedirect))
         {
             GUILayout.Space(4);
-            GUILayout.Label($"Note: {QuestDiagnostics.lastSkipOrRedirect}");
+            GUILayout.Label($"Note: {RuntimeDevConsole .lastSkipOrRedirect}");
         }
 
         GUILayout.Space(6);
         GUILayout.Label("Recent Log (last 30)", _hdr);
-        foreach (var line in QuestDiagnostics.recentLogLines)
+        foreach (var line in RuntimeDevConsole .recentLogLines)
             GUILayout.Label(line, _mono);
 
         GUILayout.EndScrollView();

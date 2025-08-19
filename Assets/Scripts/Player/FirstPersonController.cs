@@ -137,6 +137,7 @@ namespace StarterAssets
         public Transform[] armorHolder = new Transform[4];
 
         private int _uiLocks = 0;
+        private bool _lockedByDialogue = false;
 
         private bool IsCurrentDeviceMouse
         {
@@ -283,12 +284,16 @@ namespace StarterAssets
 
         private void HandleDialogueOpen(DialogueDefinition d, DialogueNode n)
         {
-            PushUiLock();
+            _lockedByDialogue = !DialogueService.IsAutoClosing;
+            if (_lockedByDialogue)
+                PushUiLock();
         }
 
         private void HandleDialogueClose()
         {
-            PopUiLock();
+            if (_lockedByDialogue)
+                PopUiLock();
+            _lockedByDialogue = false;
         }
 
         private void HandleShopOpen(Trader t)

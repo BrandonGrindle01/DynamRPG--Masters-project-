@@ -396,7 +396,8 @@ public class GuardBehaviour : MonoBehaviour
     private void DropGold()
     {
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
-        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
+        var niceName = DialogueService.CleanName(gameObject.name);
+        DialogueService.BeginOneLiner(niceName, $"dropped {goldAmount}g.", null, 3f, true);
 
         InventoryManager.Instance?.AddGold(goldAmount);
     }

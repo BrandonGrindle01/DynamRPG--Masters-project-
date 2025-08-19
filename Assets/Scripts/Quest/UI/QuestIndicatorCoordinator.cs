@@ -1,4 +1,6 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections;
 
 public class QuestIndicatorCoordinator : MonoBehaviour
 {
@@ -8,6 +10,13 @@ public class QuestIndicatorCoordinator : MonoBehaviour
     public GameObject exclamationPrefab;
     public GameObject questionPrefab;
 
+    [Header("Beacon Defaults")]
+    public QuestBeaconParamsAsset beaconParamsAsset;
+    public bool defaultSpawnBeacon = true;
+    public float defaultBeamHeight = 20f;
+    public float defaultBeamRadius = 0.05f;
+    [Range(0.05f, 1f)] public float defaultBeamAlpha = 1f;
+
     private QuestGiverIndicator currentInd;
     private GameObject currentGiver;
 
@@ -15,6 +24,50 @@ public class QuestIndicatorCoordinator : MonoBehaviour
     {
         if (Instance && Instance != this) { Destroy(gameObject); return; }
         Instance = this;
+    }
+
+    private void Start()
+    {
+        StartCoroutine(DelayedStartupSync());
+
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDestroy()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene s, LoadSceneMode m)
+    {
+        StartCoroutine(DelayedStartupSync());
+    }
+
+    private IEnumerator DelayedStartupSync()
+    {
+        yield return null;
+        yield return null;
+        TrySyncNow();
+    }
+
+    private void TrySyncNow()
+    {
+        if (HasActiveDynamic()) return;
+
+        var km = KeyQuestManager.Instance;
+        if (km == null) return;
+
+        var key = km.CurrentKey;
+        if (key == null) return;
+
+        if (key.questGiver == null && !string.IsNullOrWhiteSpace(key.questGiverRefId))
+        {
+            var sr = SceneRef.Find(key.questGiverRefId);
+            if (sr) key.questGiver = sr.gameObject;
+        }
+
+        if (key.questGiver != null)
+            FocusOn(key.questGiver, showQuestion: false);
     }
 
     private void OnEnable()
@@ -59,6 +112,11 @@ public class QuestIndicatorCoordinator : MonoBehaviour
         if (!ind.exclamationPrefab && exclamationPrefab) ind.exclamationPrefab = exclamationPrefab;
         if (!ind.questionPrefab && questionPrefab) ind.questionPrefab = questionPrefab;
 
+        ind.spawnBeacon = defaultSpawnBeacon;
+        ind.beamHeight = defaultBeamHeight;
+        ind.beamRadius = defaultBeamRadius;
+        ind.beamAlpha = defaultBeamAlpha;
+        ind.AssignBeaconParams(beaconParamsAsset);
         if (showQuestion) ind.ShowQuestion(); else ind.ShowExclamation();
 
         currentInd = ind;
@@ -103,14 +161,34 @@ public class QuestIndicatorCoordinator : MonoBehaviour
 
     private void HandleKeyAvailable(KeyQuestSO key)
     {
-        if (!HasActiveDynamic() && key != null && key.questGiver != null)
+        if (HasActiveDynamic()) return;
+        if (key != null && key.questGiver == null && !string.IsNullOrWhiteSpace(key.questGiverRefId))
+        {
+            var sr = SceneRef.Find(key.questGiverRefId);
+            if (sr) key.questGiver = sr.gameObject;
+        }
+        if (key != null && key.questGiver != null)
             FocusOn(key.questGiver, showQuestion: false);
     }
 
     private void HandleKeyBridgeState(KeyQuestSO key, int bridgesLeft)
     {
-        if (bridgesLeft > 0 && !HasActiveDynamic())
+        if (HasActiveDynamic()) return;
+
+        if (bridgesLeft <= 0 && key != null)
+        {
+            if (key.questGiver == null && !string.IsNullOrWhiteSpace(key.questGiverRefId))
+            {
+                var sr = SceneRef.Find(key.questGiverRefId);
+                if (sr) key.questGiver = sr.gameObject;
+            }
+            if (key.questGiver != null)
+                FocusOn(key.questGiver, showQuestion: false);
+        }
+        else
+        {
             ClearFocus();
+        }
     }
 
     private static bool HasActiveDynamic()

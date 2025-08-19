@@ -501,19 +501,35 @@ MonoBehaviour:
   animator: {fileID: 0}
   health: 50
   deathEffect: {fileID: 0}
-  minGoldDrop: 5
-  maxGoldDrop: 20
+  rolls: 1
+  allowDuplicates: 1
   possibleDrops:
   - item: {fileID: 11400000, guid: 6b611ecfef7835f43b00fa49966093f1, type: 2}
-    dropChance: 0.1
+    min: 1
+    max: 1
+    chance: 0.1
+    weight: 1
   - item: {fileID: 11400000, guid: e0c512fc2e2a1a24596185fbc571fbc3, type: 2}
-    dropChance: 0.7
+    min: 1
+    max: 1
+    chance: 0.8
+    weight: 7
   - item: {fileID: 11400000, guid: eca95f96e4e56904e803657828d5b98a, type: 2}
-    dropChance: 0.4
+    min: 1
+    max: 1
+    chance: 0.4
+    weight: 3
   - item: {fileID: 11400000, guid: bee676a522af562439453d267a201f83, type: 2}
-    dropChance: 0.1
+    min: 1
+    max: 1
+    chance: 0.1
+    weight: 1
   - item: {fileID: 11400000, guid: 91fa3ed9b47d14545ac580ffb34b1fc0, type: 2}
-    dropChance: 0.01
+    min: 1
+    max: 1
+    chance: 0.01
+    weight: 1
+  bonusGold: 8
   agent: {fileID: 0}
   walkPoint: {x: 0, y: 0, z: 0}
   walkrange: 10

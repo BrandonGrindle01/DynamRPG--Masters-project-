@@ -1,83 +1,121 @@
 using UnityEngine;
 
-public struct QuestBeaconParams
-{
-    public float yStart;
-    public float height;
-    public float radius;
-    public float alpha;
-}
-
 public static class QuestBeacon
 {
-    public static GameObject Create(Transform target, QuestBeaconParams p)
+    public static GameObject CreateBeam(Transform target, float yStart, float height, float radius, float alpha, Material template)
     {
-        var root = new GameObject("QuestBeacon");
-        root.transform.position = target ? target.position : Vector3.zero;
-        var cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-        Object.Destroy(cyl.GetComponent<Collider>());
-        cyl.transform.SetParent(root.transform, false);
+        if (!target) return null;
 
-        float halfHeight = Mathf.Max(0.01f, p.height * 0.5f);
-        cyl.transform.localScale = new Vector3(Mathf.Max(0.01f, p.radius), halfHeight, Mathf.Max(0.01f, p.radius));
+        // Geometry: a thin cylinder (beam)
+        var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+        go.name = "QuestBeacon";
+        var col = go.GetComponent<Collider>(); if (col) Object.Destroy(col);
 
-        cyl.transform.localPosition = new Vector3(0f, p.yStart + halfHeight, 0f);
+        go.transform.SetParent(null);
+        go.transform.position = target.position;
+        go.transform.localScale = new Vector3(Mathf.Max(0.01f, radius * 2f), Mathf.Max(0.1f, height / 2f), Mathf.Max(0.01f, radius * 2f));
 
+        // Lift it so base sits at yStart
+        var baseY = target.position.y + yStart;
+        var halfH = Mathf.Max(0.1f, height / 2f);
+        var pos = go.transform.position; pos.y = baseY + halfH; go.transform.position = pos;
 
-        Shader shader = Shader.Find("Unlit/Transparent");
-        if (!shader) shader = Shader.Find("Unlit/Color");
-        var mat = new Material(shader);
-        var c = new Color(1f, 0.92f, 0.3f, Mathf.Clamp01(p.alpha));
-        mat.color = c;
+        // Material
+        var mr = go.GetComponent<MeshRenderer>();
+        var mat = template ? new Material(template) : CreateFallbackMaterial();
+        if (mr) mr.material = mat;
 
-        var mr = cyl.GetComponent<MeshRenderer>();
-        mr.sharedMaterial = mat;
-        mr.sharedMaterial.renderQueue = 3000;
+        // Ensure transparency
+        EnforceTransparent(mat);
 
-        var lightGO = new GameObject("BeamLight");
-        lightGO.transform.SetParent(root.transform, false);
-        lightGO.transform.localPosition = new Vector3(0, p.yStart + p.height + 0.5f, 0);
-        var light = lightGO.AddComponent<Light>();
-        light.type = LightType.Spot;
-        light.range = Mathf.Max(20f, p.height + 4f);
-        light.spotAngle = 55f;
-        light.intensity = 3f;
+        // Default color
+        var c = new Color(0.2f, 0.95f, 1f, Mathf.Clamp01(alpha));
+        SetColor(mat, c);
 
-        var pulse = root.AddComponent<QuestBeaconPulse>(); pulse.lightRef = light; pulse.mesh = cyl.transform;
-        var follow = root.AddComponent<FollowTransform>(); follow.target = target;
+        // Simple follower
+        var follow = go.AddComponent<_BeaconFollow>();
+        follow.target = target;
+        follow.yStart = yStart;
+        follow.halfHeight = halfH;
 
-        return root;
-    }
-}
-
-public class QuestBeaconPulse : MonoBehaviour
-{
-    public Light lightRef;
-    public Transform mesh;
-    public float speed = 2f, scaleAmp = 0.15f, lightAmp = 1.5f;
-    Vector3 baseScale; float baseIntensity;
-
-    void Start()
-    {
-        baseScale = mesh ? mesh.localScale : Vector3.one;
-        baseIntensity = lightRef ? lightRef.intensity : 2f;
+        return go;
     }
 
-    void Update()
+    public static void SetBeaconColor(GameObject beacon, Color c)
     {
-        float t = Time.time * speed;
-        float s = 1f + Mathf.Sin(t) * scaleAmp;
-        if (mesh) mesh.localScale = new Vector3(baseScale.x * s, baseScale.y, baseScale.z * s);
-        if (lightRef) lightRef.intensity = baseIntensity + Mathf.Abs(Mathf.Sin(t)) * lightAmp;
+        if (!beacon) return;
+        var mr = beacon.GetComponent<MeshRenderer>();
+        if (!mr || !mr.material) return;
+        SetColor(mr.material, c);
     }
-}
 
-public class FollowTransform : MonoBehaviour
-{
-    public Transform target; public Vector3 offset = Vector3.zero;
-    void LateUpdate()
+    // ---------- internals ----------
+    private static void SetColor(Material m, Color c)
     {
-        if (!target) { Destroy(gameObject); return; }
-        transform.position = target.position + offset;
+        if (!m) return;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        else if (m.HasProperty("_Color")) m.SetColor("_Color", c);
+    }
+
+    private static void EnforceTransparent(Material m)
+    {
+        if (!m) return;
+
+        if (m.HasProperty("_Surface"))
+        {
+            m.SetFloat("_Surface", 1f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetInt("_ZWrite", 0);
+            m.DisableKeyword("_ALPHATEST_ON");
+            m.EnableKeyword("_ALPHABLEND_ON");
+            m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            return;
+        }
+
+        if (m.shader && m.shader.name == "Standard")
+        {
+            if (m.HasProperty("_Mode")) m.SetFloat("_Mode", 3f);
+            m.SetOverrideTag("RenderType", "Transparent");
+            m.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            m.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            m.SetInt("_ZWrite", 0);
+            m.DisableKeyword("_ALPHATEST_ON");
+            m.EnableKeyword("_ALPHABLEND_ON");
+            m.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+            m.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+        }
+    }
+
+    private static Material CreateFallbackMaterial()
+    {
+        string[] tries = {
+            "Universal Render Pipeline/Unlit",
+            "Universal Render Pipeline/Lit",
+            "Sprites/Default",
+            "UI/Default",
+            "Standard"
+        };
+
+        Shader sh = null;
+        foreach (var name in tries) { sh = Shader.Find(name); if (sh) break; }
+        return sh ? new Material(sh) : null;
+    }
+
+    private class _BeaconFollow : MonoBehaviour
+    {
+        public Transform target;
+        public float yStart;
+        public float halfHeight;
+
+        void LateUpdate()
+        {
+            if (!target) { Destroy(gameObject); return; }
+            var p = target.position;
+            p.y = p.y + yStart + halfHeight;
+            transform.position = p;
+        }
     }
 }

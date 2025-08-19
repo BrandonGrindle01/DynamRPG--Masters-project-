@@ -74,8 +74,8 @@ public class DialogueUIController : MonoBehaviour
     private void OnOpen(DialogueDefinition def, DialogueNode node)
     {
         if (panelRoot) panelRoot.SetActive(true);
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        //Cursor.lockState = CursorLockMode.None;
+        //Cursor.visible = true;
         Show();
         Rebuild(def, node);
     }
@@ -89,8 +89,8 @@ public class DialogueUIController : MonoBehaviour
     {
         Hide();
         if (panelRoot) panelRoot.SetActive(false);
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        //Cursor.lockState = CursorLockMode.Locked;
+        //Cursor.visible = false;
     }
 
     private void Rebuild(DialogueDefinition def, DialogueNode node)

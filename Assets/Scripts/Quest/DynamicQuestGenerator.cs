@@ -12,6 +12,15 @@ public class DynamicQuestGenerator : MonoBehaviour
     [SerializeField] public bool devForceCollectOnly = false;
     [SerializeField] public bool devForceExploreOnly = false;
 
+    private void D(string msg)
+    {
+#if UNITY_EDITOR
+        Debug.Log($"[DQG] {msg}");
+#else
+    Debug.Log($"[DQG] {msg}");
+#endif
+    }
+
     [Header("Bias & Defaults")]
     public int minBridgeQuests = 1;
     public int maxBridgeQuests = 3;
@@ -315,6 +324,7 @@ public class DynamicQuestGenerator : MonoBehaviour
 #if UNITY_EDITOR
         Debug.Log("[DQG Weights] " + string.Join(", ", weights.Select(kv => $"{kv.Key}:{kv.Value:F2}")));
 #endif
+        RuntimeDevConsole.SetWeights(weights.ToDictionary(kv => kv.Key, kv => kv.Value));
 
         float r = UnityEngine.Random.value;
         float acc = 0f;
