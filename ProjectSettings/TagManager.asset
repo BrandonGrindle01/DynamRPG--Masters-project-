@@ -7,6 +7,9 @@ TagManager:
   - Ground
   - CinemachineTarget
   - Pickup
+  - Town
+  - Bandit
+  - Guard
   layers:
   - Default
   - TransparentFX

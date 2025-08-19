@@ -2375,9 +2375,10 @@ GameObject:
   - component: {fileID: 6066449242730020117}
   - component: {fileID: 8767388143815941871}
   - component: {fileID: -315091540079796223}
+  - component: {fileID: -1382083079176144672}
   m_Layer: 0
   m_Name: GoblinBlacksmithSK_QG
-  m_TagString: Untagged
+  m_TagString: Town
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -2460,6 +2461,19 @@ MonoBehaviour:
   stock: []
   sellbackMultiplier: 0.5
   ownerNameForTheftBan: 
+--- !u!114 &-1382083079176144672
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8398558615673144534}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c609c23cd247ead489cbaa1d57ddd332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: blacksmith
 --- !u!1 &8538783332128369577
 GameObject:
   m_ObjectHideFlags: 0

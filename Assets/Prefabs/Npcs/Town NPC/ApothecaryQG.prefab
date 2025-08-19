@@ -1035,9 +1035,10 @@ GameObject:
   - component: {fileID: 505004401607198133}
   - component: {fileID: -7203016659876753116}
   - component: {fileID: -4135894390531907211}
+  - component: {fileID: -6211232739903231571}
   m_Layer: 0
   m_Name: ApothecaryQG
-  m_TagString: Untagged
+  m_TagString: Town
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1131,10 +1132,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 452ff2a60c7b4ee439eaf11a50deefe1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  definition: {fileID: 11400000, guid: ba4fef13fc05c7b4fa34dea4172aa477, type: 2}
+  definition: {fileID: 0}
   npcDisplayNameOverride: 
   autoStartOnInteract: 1
   refusalText: i dont deal with criminals
+  refuseIfCriminal: 0
+  requireCriminal: 0
+  refuseIfBannedForTheft: 0
+  autoReportKeyTalkOnOpen: 1
+--- !u!114 &-6211232739903231571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4850279778586824228}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c609c23cd247ead489cbaa1d57ddd332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: apothecary
 --- !u!1 &5004915813042912870
 GameObject:
   m_ObjectHideFlags: 0

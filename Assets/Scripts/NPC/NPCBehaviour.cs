@@ -5,13 +5,8 @@ using StarterAssets;
 using UnityEngine.AI;
 using UnityEngine.InputSystem.XR;
 using System.Text.RegularExpressions;
-
-[System.Serializable]
-public class LootDrop
-{
-    public ItemData item;
-    [Range(0f, 1f)] public float dropChance = 0.2f;
-}
+using LootEntry = InventoryManager.LootEntry;
+using UnityEditor;
 
 public class NPCBehaviour : MonoBehaviour
 {
@@ -25,9 +20,10 @@ public class NPCBehaviour : MonoBehaviour
     private bool isDead = false;
 
     [Header("Death Drops")]
-    [SerializeField] private int minGoldDrop = 5;
-    [SerializeField] private int maxGoldDrop = 20;
-    [SerializeField] private List<LootDrop> possibleDrops = new();
+    [SerializeField, Range(1, 10)] private int rolls = 1;
+    [SerializeField] private bool allowDuplicates = true;
+    [SerializeField] private List<LootEntry> possibleDrops = new();
+    [SerializeField, Range(0, 1000)] private int bonusGold = 0;
 
     [Header("NPC Navigation")]
     [SerializeField] private NavMeshAgent agent;
@@ -250,16 +246,6 @@ public class NPCBehaviour : MonoBehaviour
                 return;
             }
         }
-        //if (stallPoints.Count > 0 && Random.value < 0.5f)
-        //{
-        //    Transform randomStall = stallPoints[Random.Range(0, stallPoints.Count)];
-        //    if (randomStall != null && NavMesh.SamplePosition(randomStall.position, out hit, 2f, NavMesh.AllAreas))
-        //    {
-        //        walkPoint = hit.position;
-        //        walkpointSet = true;
-        //        return;
-        //    }
-        //}
         for (int i = 0; i < 10; i++)
         {
             Vector3 randomPoint = transform.position + new Vector3(Random.Range(-walkrange, walkrange), 0, Random.Range(-walkrange, walkrange));
@@ -288,7 +274,6 @@ public class NPCBehaviour : MonoBehaviour
         if (isDead) return;
 
         health -= amount;
-        Debug.Log($"{gameObject.name} took {amount} damage. Remaining: {health}");
         animator.SetTrigger("Hit");
         audioSource.PlayOneShot(hurtSFX);
         if (enableFleeOnHit && !inDanger)
@@ -374,13 +359,10 @@ public class NPCBehaviour : MonoBehaviour
         if (deathEffect != null)
             Instantiate(deathEffect, transform.position, Quaternion.identity);
 
-        Debug.Log("Player committed a crime — murder!");
-
         PlayerStatsTracker.Instance.RegisterCrime();
         SetRagdoll(true);
         audioSource.PlayOneShot(deathSFX);
 
-        DropGold();
         TryDropLoot();
 
         agent.isStopped = true;
@@ -389,23 +371,67 @@ public class NPCBehaviour : MonoBehaviour
         Destroy(gameObject, 5f);
     }
 
-    private void DropGold()
-    {
-        int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
-        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
-
-        InventoryManager.Instance?.AddGold(goldAmount);
-    }
 
     private void TryDropLoot()
     {
-        var validDrops = possibleDrops.FindAll(drop => drop.item != null && Random.value <= drop.dropChance);
+        var pool = new List<LootEntry>(possibleDrops);
 
-        if (validDrops.Count > 0)
+        var gained = new Dictionary<ItemData, int>();
+        int goldGained = 0;
+
+        for (int r = 0; r < rolls; r++)
         {
-            var selected = validDrops[Random.Range(0, validDrops.Count)];
-            InventoryManager.Instance?.AddItem(selected.item, 1);
-            Debug.Log($"{gameObject.name} dropped: {selected.item.name}");
+            var candidates = new List<LootEntry>();
+            foreach (var e in pool)
+            {
+                if (e.item == null) continue;
+                if (UnityEngine.Random.value <= Mathf.Clamp01(e.chance))
+                    candidates.Add(e);
+            }
+            if (candidates.Count == 0) continue;
+
+            float totalW = 0f;
+            foreach (var c in candidates) totalW += Mathf.Max(0.0001f, c.weight);
+
+            float pick = UnityEngine.Random.value * totalW;
+            LootEntry chosen = candidates[0];
+            float acc = 0f;
+            foreach (var c in candidates)
+            {
+                acc += Mathf.Max(0.0001f, c.weight);
+                if (pick <= acc) { chosen = c; break; }
+            }
+
+            int amount = UnityEngine.Random.Range(
+                Mathf.Max(1, chosen.min),
+                Mathf.Max(chosen.min, chosen.max) + 1
+            );
+            amount = Mathf.Max(1, amount);
+
+            InventoryManager.Instance.AddItem(chosen.item, amount);
+
+            if (!gained.ContainsKey(chosen.item)) gained[chosen.item] = 0;
+            gained[chosen.item] += amount;
+
+            if (!allowDuplicates) pool.Remove(chosen);
         }
+
+        if (bonusGold > 0)
+        {
+            InventoryManager.Instance.AddGold(bonusGold);
+            goldGained = bonusGold;
+        }
+
+        List<string> parts = new List<string>();
+        foreach (var kv in gained)
+        {
+            if (kv.Key != null)
+                parts.Add($"{kv.Value}x {kv.Key.itemName}");
+        }
+        if (goldGained > 0) parts.Add($"{goldGained} gold");
+
+        string summary = parts.Count > 0 ? string.Join(", ", parts) : "nothing";
+        var niceName = DialogueService.CleanName(gameObject.name);
+        DialogueService.BeginOneLiner(niceName, $"dropped {summary}.", null, 3f, true);
     }
 }

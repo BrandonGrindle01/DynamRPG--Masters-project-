@@ -43,9 +43,10 @@ GameObject:
   - component: {fileID: 2866085159822962736}
   - component: {fileID: -4346232274584675782}
   - component: {fileID: -6661254198379817438}
+  - component: {fileID: 35574766974353101}
   m_Layer: 0
   m_Name: Farmman
-  m_TagString: Untagged
+  m_TagString: Town
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -110,6 +111,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 0.34875488, y: 1.6605353, z: 0.28836823}
   m_Center: {x: 0.0018310547, y: 1.0730851, z: 0.006801605}
+--- !u!114 &35574766974353101
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 413540403332564878}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c609c23cd247ead489cbaa1d57ddd332, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  id: farmer
 --- !u!1 &533346761682331652
 GameObject:
   m_ObjectHideFlags: 0

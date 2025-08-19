@@ -10,7 +10,10 @@ public class WorldTags : MonoBehaviour
     public bool isPlayerWanted = false;
     public bool hasAttackedGuards = false;
     public bool hasHelpedVillagers = false;
-    //public bool hasJoinedBandits;
+
+    [Header("Generic Flags (for key quests)")]
+    [SerializeField] private List<string> initialFlags = new();
+    private HashSet<string> _flags;
 
     [Header("World Locations")]
     public List<Transform> townLocations = new();
@@ -27,7 +30,9 @@ public class WorldTags : MonoBehaviour
     private void Awake()
     {
         if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        else { Destroy(gameObject); return; }
+
+        _flags = new HashSet<string>(initialFlags ?? new List<string>());
     }
 
     public void SetPlayerWanted(bool value)
@@ -54,11 +59,6 @@ public class WorldTags : MonoBehaviour
     {
         return hasHelpedVillagers && !isPlayerWanted;
     }
-
-    //public bool IsPlayerBanditFriendly()
-    //{
-    //    return hasJoinedBandits;
-    //}
 
     public Transform GetTownLocation()
     {

@@ -23,8 +23,8 @@ public class ShopUIController : MonoBehaviour
     {
         ShopService.OnShopOpened += ShopOpened;
         ShopService.OnShopClosed += ShopClosed;
-        ShopService.OnBought += _ => RefreshAll();
-        ShopService.OnSold += _ => RefreshAll();
+        ShopService.OnBought += HandleBought;
+        ShopService.OnSold += HandleSold;
 
         if (ShopService.Current != null) ShopOpened(ShopService.Current);
     }
@@ -33,9 +33,12 @@ public class ShopUIController : MonoBehaviour
     {
         ShopService.OnShopOpened -= ShopOpened;
         ShopService.OnShopClosed -= ShopClosed;
-        ShopService.OnBought -= _ => RefreshAll();
-        ShopService.OnSold -= _ => RefreshAll();
+        ShopService.OnBought -= HandleBought;
+        ShopService.OnSold -= HandleSold;
     }
+
+    private void HandleBought(ItemData _) => RefreshAll();
+    private void HandleSold(ItemData _) => RefreshAll();
 
     private void ShopOpened(Trader trader)
     {
@@ -88,7 +91,22 @@ public class ShopUIController : MonoBehaviour
     {
         ClearChildren(sellContent);
 
-        foreach (var slot in InventoryManager.Instance.inventory)
+        var invMgr = InventoryManager.Instance;
+        if (invMgr == null)
+        {
+            Debug.LogWarning("ShopUI: InventoryManager.Instance is null");
+            return;
+        }
+
+        var inv = invMgr.inventory;
+        if (inv == null)
+        {
+            Debug.LogWarning("ShopUI: inventory list is null");
+            return;
+        }
+
+        int added = 0;
+        foreach (var slot in inv)
         {
             var item = slot.item;
             if (item == null) continue;
@@ -103,7 +121,13 @@ public class ShopUIController : MonoBehaviour
 
             int shownQty = item.stackable ? slot.quantity : 1;
             ShopItem(go, item, shownQty, sellPrice, isBuyRow: false);
+            added++;
         }
+
+        Debug.Log($"ShopUI: populated sell list with {added} entries");
+
+        if (sellContent is RectTransform rt)
+            LayoutRebuilder.ForceRebuildLayoutImmediate(rt);
     }
 
     private void ShopItem(GameObject ShopITM, ItemData item, int qty, int price, bool isBuyRow)

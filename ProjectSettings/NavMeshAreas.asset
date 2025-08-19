@@ -17,7 +17,7 @@ NavMeshProjectSettings:
     cost: 1
   - name: Farmland
     cost: 1
-  - name: 
+  - name: QuestNPC
     cost: 1
   - name: 
     cost: 1
@@ -75,7 +75,7 @@ NavMeshProjectSettings:
     agentTypeID: 0
     agentRadius: 0.5
     agentHeight: 1
-    agentSlope: 20.2
+    agentSlope: 60
     agentClimb: 0.75
     ledgeDropHeight: 0
     maxJumpAcrossDistance: 0

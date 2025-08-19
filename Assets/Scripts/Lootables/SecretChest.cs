@@ -1,6 +1,8 @@
 using UnityEngine;
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using LootEntry = InventoryManager.LootEntry;
 
 [RequireComponent(typeof(Collider))]
 public class SecretChest : MonoBehaviour
@@ -15,15 +17,6 @@ public class SecretChest : MonoBehaviour
     [SerializeField, Range(1, 10)] private int rolls = 1;
     [SerializeField] private bool allowDuplicates = true;
 
-    [Serializable]
-    public class LootEntry
-    {
-        public ItemData item;
-        public int min = 1;
-        public int max = 1;
-        [Range(0f, 1f)] public float chance = 1f;
-        public float weight = 1f;
-    }
     [SerializeField] private List<LootEntry> loot = new List<LootEntry>();
     [SerializeField, Range(0, 1000)] private int bonusGold = 0;
 
@@ -34,11 +27,17 @@ public class SecretChest : MonoBehaviour
     [Header("Stats / Secrets")]
     [SerializeField] private bool countAsSecret = true;
 
-    [Header("Quest Hook (optional)")]
-    [SerializeField] private bool isQuestChest = false;
-    [SerializeField] private string questId = "";
+    [Header("Quest Hook")]
+    public bool isQuestChest = false;
+    public string questTokenId = "";
+
+    [Header("Timing")]
+    [Tooltip("Delay before reporting quest completion so the open animation/SFX can play.")]
+    [SerializeField] private float questCompleteDelay = 3f;
 
     private bool opened;
+
+    public event System.Action OnOpened;
 
     private void Reset()
     {
@@ -50,10 +49,17 @@ public class SecretChest : MonoBehaviour
     {
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
+        countAsSecret = !isQuestChest;
+
         if (string.IsNullOrEmpty(chestId))
-            chestId = string.IsNullOrEmpty(questId) ? Guid.NewGuid().ToString("N") : ("QCHEST_" + questId);
+            chestId = string.IsNullOrEmpty(questTokenId) ? Guid.NewGuid().ToString("N") : ("QCHEST_" + questTokenId);
 
         opened = PlayerPrefs.GetInt(PPX + chestId, 0) == 1;
+        if (opened)
+        {
+            var col = GetComponent<Collider>();
+            if (col) col.enabled = false;
+        }
     }
 
     public bool CanInteract() => !opened;
@@ -65,23 +71,37 @@ public class SecretChest : MonoBehaviour
         PlayerPrefs.SetInt(PPX + chestId, 1);
         PlayerPrefs.Save();
 
+        var col = GetComponent<Collider>();
+        if (col) col.enabled = false;
+
         if (animator && !string.IsNullOrEmpty(openTrigger))
             animator.SetTrigger(openTrigger);
         if (sfx && openClip)
             sfx.PlayOneShot(openClip);
 
         GiveLoot();
-
         if (countAsSecret) PlayerStatsTracker.Instance?.RegisterSecretFound();
 
-        //if (isQuestChest && !string.IsNullOrEmpty(questId))
-            //QuestManager.Instance?.NotifyQuestChestOpened(questId, this);
+        if (isQuestChest && !string.IsNullOrEmpty(questTokenId))
+            StartCoroutine(DelayReportQuestCompletion());
+    }
+
+    private IEnumerator DelayReportQuestCompletion()
+    {
+
+        yield return new WaitForSeconds(Mathf.Max(0.05f, questCompleteDelay));
+
+        if (isQuestChest && !string.IsNullOrEmpty(questTokenId))
+        {
+            OnOpened?.Invoke();
+            QuestService.ReportEnteredLocation(questTokenId);
+            isQuestChest = false;
+        }
     }
 
     private void GiveLoot()
     {
         var pool = new List<LootEntry>(loot);
-
         var gained = new Dictionary<ItemData, int>();
         int goldGained = 0;
 
@@ -130,26 +150,10 @@ public class SecretChest : MonoBehaviour
 
         List<string> parts = new List<string>();
         foreach (var kv in gained)
-        {
-            if (kv.Key != null)
-                parts.Add($"{kv.Value}x {kv.Key.itemName}");
-        }
+            if (kv.Key != null) parts.Add($"{kv.Value}x {kv.Key.itemName}");
         if (goldGained > 0) parts.Add($"{goldGained} gold");
 
         string summary = parts.Count > 0 ? string.Join(", ", parts) : "nothing";
-
         DialogueService.BeginOneLiner("Chest", $"You found {summary}.", null, 3f, true);
-    }
-
-    public void MarkAsQuestChest(string id)
-    {
-        isQuestChest = true;
-        questId = id;
-
-        if (!string.IsNullOrEmpty(questId))
-        {
-            chestId = "QCHEST_" + questId;
-            opened = PlayerPrefs.GetInt(PPX + chestId, 0) == 1;
-        }
     }
 }

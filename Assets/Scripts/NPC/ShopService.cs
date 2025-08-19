@@ -15,14 +15,12 @@ public static class ShopService
     {
         Current = trader;
         OnShopOpened?.Invoke(trader);
-        Debug.Log($"Opened shop: {trader.traderType}");
     }
 
     public static void End()
     {
         Current = null;
         OnShopClosed?.Invoke();
-        Debug.Log("Closed shop");
     }
 
     public static bool Buy(ItemData item)

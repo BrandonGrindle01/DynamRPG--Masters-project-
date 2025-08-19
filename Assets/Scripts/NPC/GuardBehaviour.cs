@@ -43,7 +43,7 @@ public class GuardBehaviour : MonoBehaviour
     private bool _damageThisSwing = false;
     private bool _wasInAttackTag = false;
     private float _nextAttackReadyTime = 0f;
-    //private bool alreadyAttacked;
+
     [SerializeField] private float health = 50f;
     [SerializeField] private float maxHealth = 50f;
 
@@ -62,7 +62,6 @@ public class GuardBehaviour : MonoBehaviour
     private Quaternion targetRotation;
     private float turnSpeed = 5f;
 
-    //misc spawner info
     private GuardZone spawner;
     private BoxCollider zone;
 
@@ -387,6 +386,7 @@ public class GuardBehaviour : MonoBehaviour
         IsDead = true;
 
         PlayerStatsTracker.Instance?.RegisterCrime();
+        QuestService.ReportKill(gameObject);
         SetRagdoll(true);
         DropGold();
 
@@ -396,7 +396,8 @@ public class GuardBehaviour : MonoBehaviour
     private void DropGold()
     {
         int goldAmount = Random.Range(minGoldDrop, maxGoldDrop + 1);
-        Debug.Log($"{gameObject.name} dropped {goldAmount} gold.");
+        var niceName = DialogueService.CleanName(gameObject.name);
+        DialogueService.BeginOneLiner(niceName, $"dropped {goldAmount}g.", null, 3f, true);
 
         InventoryManager.Instance?.AddGold(goldAmount);
     }

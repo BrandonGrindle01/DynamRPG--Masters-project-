@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31549c13a577b2e45aeca161cff4c487, type: 3}
+  m_Name: Kill the Bandit Leader
+  m_EditorClassIdentifier: 
+  id: kill-bandit-leader
+  title: Kill Roak the bandit leader
+  description: 'the bandit leader has been getting overly confident and needs taking
+    out!
+
+    clear the camp to lure him out then take him down!
+
+    (final Key
+    Quest)'
+  requiredWorldFlags:
+  - met-guard
+  setFlagsOnStart: []
+  setFlagsOnComplete:
+  - 
+  minDynamicBetween: 2
+  maxDynamicBetween: 3
+  questGiverRefId: 
+  questGiver: {fileID: 0}
+  contextTag: bandit
+  completionType: 1
+  targetEnemyRefId: bandit_leader
+  targetEnemy: {fileID: 0}
+  targetLocationRefId: 
+  targetLocation: {fileID: 0}
+  reachRadius: 3
+  requiresTurnIn: 0
+  nextBridgeGiverRule: 0
+  nextBridgeGiverRefId: 

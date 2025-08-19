@@ -2,7 +2,9 @@ using UnityEngine;
 
 public class DialogueComponent : MonoBehaviour
 {
-    public DialogueDefinition definition;
+    [Header("Template (asset)")]
+    public DialogueDefinition definition;          // keep as the template only
+
     public string npcDisplayNameOverride = "";
     public bool autoStartOnInteract = true;
     [TextArea] public string refusalText = "Not now.";
@@ -11,76 +13,97 @@ public class DialogueComponent : MonoBehaviour
     public bool refuseIfCriminal = false;
     public bool requireCriminal = false;
     public bool refuseIfBannedForTheft = false;
+    public bool autoReportKeyTalkOnOpen = true;
 
     public string NpcDisplayName => string.IsNullOrEmpty(npcDisplayNameOverride) ? gameObject.name : npcDisplayNameOverride;
     public string RefusalTextOrDefault() => string.IsNullOrEmpty(refusalText) ? "Not now." : refusalText;
 
     public bool TryOpenShop()
     {
-        Debug.Log("trying to open shop");
         var fpc = StarterAssets.FirstPersonController.instance;
         var trader = GetComponent<Trader>();
         if (!trader || fpc == null) return false;
-        bool opened = trader.TryOpenShop(fpc);
-        return opened;
+        return trader.TryOpenShop(fpc);
     }
 
     public bool TryStartDialogue(string startId = null)
     {
         bool criminal = WorldTags.Instance && WorldTags.Instance.IsPlayerCriminal();
         var trader = GetComponent<Trader>();
+        var qCurrent = QuestService.GetCurrent();
+        bool canTurnInDynamicHere = qCurrent != null &&
+                                    qCurrent.status == QuestStatus.Completed &&
+                                    QuestService.SameNPC(qCurrent.questGiver, gameObject);
+        bool hasPendingHere = QuestService.HasPendingFor(gameObject);
 
-        if (refuseIfBannedForTheft && trader && trader.IsBannedForTheft)
+        var km = KeyQuestManager.Instance;
+        bool canTurnInKeyHere =
+            km && km.IsKeyAvailable && km.IsKeyObjectiveComplete &&
+            km.CurrentKey && km.CurrentKey.requiresTurnIn &&
+            km.CurrentKey.questGiver == gameObject;
+
+        bool canAdvanceKeyTalkHere =
+            km && km.IsKeyAvailable && !km.IsKeyObjectiveComplete &&
+            km.CurrentKey &&
+            km.CurrentKey.completionType == KeyQuestSO.KeyQuestCompletionType.TalkToGiver &&
+            km.CurrentKey.questGiver == gameObject;
+
+        bool allowServiceInteraction = hasPendingHere || canTurnInDynamicHere || canTurnInKeyHere || canAdvanceKeyTalkHere;
+
+        if (refuseIfBannedForTheft && trader && trader.IsBannedForTheft && !allowServiceInteraction)
+        { DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true); return false; }
+
+        if (!allowServiceInteraction)
         {
-            DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true);
-            return false;
+            if (requireCriminal && !criminal)
+            { DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true); return false; }
+
+            if (refuseIfCriminal && criminal)
+            { DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true); return false; }
         }
 
-        if (requireCriminal && !criminal)
-        {
-            DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true);
-            return false;
-        }
+        if (!definition) return false;
 
-        if (refuseIfCriminal && criminal)
-        {
-            DialogueService.BeginOneLiner(NpcDisplayName, RefusalTextOrDefault(), this, 3f, true);
-            return false;
-        }
+        // Build a CLONE; do NOT modify or replace the asset.
+        var built = DialogueQuestBuilder.BuildForNPC(definition, this);
+        if (string.IsNullOrEmpty(built.npcName))
+            built.npcName = DialogueService.CleanName(NpcDisplayName);
 
-        if (definition == null) return false;
-        if (string.IsNullOrEmpty(definition.npcName))
-            definition.npcName = DialogueService.CleanName(NpcDisplayName);
-
-        DialogueService.Begin(definition, this, startId);
+        DialogueService.Begin(built, this, startId);
         return true;
     }
+
     public void OfferQuest()
     {
-        bool criminal = WorldTags.Instance && WorldTags.Instance.IsPlayerCriminal();
-        var trader = GetComponent<Trader>();
+        var npc = gameObject;
 
-        if (trader && trader.IsBannedForTheft)
-        { DialogueService.BeginOneLiner(NpcDisplayName, "Not serving thieves.", this, 3f, true); return; }
+        if (QuestService.HasPendingFor(npc))
+        {
+            var builtExisting = DialogueQuestBuilder.BuildForNPC(definition, this);
+            DialogueService.Begin(builtExisting, this, "auto_offer");
+            return;
+        }
 
-        if (trader && trader.traderType == TraderType.Bandit && !criminal)
-        { DialogueService.BeginOneLiner(NpcDisplayName, "We only deal with wanted folk.", this, 3f, true); return; }
+        var existing = QuestService.GetPending();
+        if (existing != null && existing.questGiver != npc)
+        {
+            existing.questGiver = npc;
+            QuestService.SetPendingOffer(existing);
 
-        if (!trader || (trader.traderType != TraderType.Bandit && criminal))
-        { DialogueService.BeginOneLiner(NpcDisplayName, "We don’t deal with criminals.", this, 3f, true); return; }
+            var builtRetarget = DialogueQuestBuilder.BuildForNPC(definition, this);
+            DialogueService.Begin(builtRetarget, this, "auto_offer");
+            return;
+        }
 
-        var gen = DynamicQuestGenerator.Instance;
-        if (gen == null)
+        var ctx = KeyQuestManager.Instance ? KeyQuestManager.Instance.Current?.contextTag : null;
+        var preview = DynamicQuestGenerator.Instance?.GenerateNextDynamicQuest(ctx, assign: false, forcedGiver: npc);
+        if (preview == null)
         { DialogueService.BeginOneLiner(NpcDisplayName, "No work right now.", this, 3f, true); return; }
 
-        gen.GenerateNextDynamicQuest();
-        var dq = gen.GetCurrentQuest();
-        if (dq == null)
-        { DialogueService.BeginOneLiner(NpcDisplayName, "No work right now.", this, 3f, true); return; }
+        preview.questGiver = npc;
+        QuestService.SetPendingOffer(preview);
 
-        dq.questGiver = this.gameObject;
-
-        QuestService.AssignDynamic(dq);
-        DialogueService.BeginOneLiner(NpcDisplayName, $"Quest accepted: {dq.questName}", this, 2f, true);
+        var built = DialogueQuestBuilder.BuildForNPC(definition, this);
+        DialogueService.Begin(built, this, "auto_offer");
     }
 }
