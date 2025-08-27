@@ -122,9 +122,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         return pool[UnityEngine.Random.Range(0, pool.Length)];
     }
 
-    // --------------------------------------------------------------------
-    // MAIN ENTRY
-    // --------------------------------------------------------------------
     public DynamicQuest GenerateNextDynamicQuest(string contextTag, bool assign = true, GameObject forcedGiver = null)
     {
         Debug.Log("Generating Dynamic Quest");
@@ -208,9 +205,6 @@ public class DynamicQuestGenerator : MonoBehaviour
 
     public DynamicQuest GetCurrentQuest() => QuestService.GetCurrent();
 
-    // --------------------------------------------------------------------
-    // TYPE PICKER + HELPERS
-    // --------------------------------------------------------------------
     private QuestType PickTypeWeighted()
     {
         var weights = new Dictionary<QuestType, float>
@@ -358,9 +352,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         }
     }
 
-    // --------------------------------------------------------------------
-    // QUEST MAKERS
-    // --------------------------------------------------------------------
     private Personality ScorePersonality(PlayerStatsTracker s)
     {
         if (s == null) return Personality.Balanced;
@@ -526,9 +517,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         };
     }
 
-    // --------------------------------------------------------------------
-    // EXPLORE HELPERS (zone + hidden token / chest)
-    // --------------------------------------------------------------------
     private Vector3 PickExploreCenter(GameObject forcedGiver)
     {
         var wt = WorldTags.Instance;
@@ -629,10 +617,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         avoidHook.enemies = spawned.Where(x => x != null).ToList();
     }
 
-
-    // --------------------------------------------------------------------
-    // DELIVER HELPERS (drop zone + trigger)
-    // --------------------------------------------------------------------
     public void SetupDeliverRuntime(DynamicQuest q)
     {
         if (q == null) return;
@@ -675,10 +659,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         QuestService.RegisterRuntimeObject(q.questId, trigger);
     }
 
-
-    // --------------------------------------------------------------------
-    // COLLECT HELPERS (spawn actual item prefabs when available)
-    // --------------------------------------------------------------------
     public void SetupCollectRuntime(DynamicQuest q)
     {
         CollectSpec spec = null;
@@ -782,9 +762,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         }
     }
 
-    // --------------------------------------------------------------------
-    // COLLECT PICKING (spec + anchor)
-    // --------------------------------------------------------------------
     private CollectSpec PickCollectSpec()
     {
         if (collectOptions == null || collectOptions.Count == 0) return null;
@@ -881,9 +858,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         }
     }
 
-    // --------------------------------------------------------------------
-    // Small runtime helper classes (embedded)
-    // --------------------------------------------------------------------
     private HiddenQuestToken MakeInvisibleToken(Vector3 at, string tokenId)
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -956,9 +930,6 @@ public class DynamicQuestGenerator : MonoBehaviour
         }
     }
 
-    // --------------------------------------------------------------------
-    // Utilities
-    // --------------------------------------------------------------------
     private Vector3 SnapToGround(Vector3 pos)
     {
         var start = pos + Vector3.up * 50f;
@@ -1067,11 +1038,10 @@ public class DynamicQuestGenerator : MonoBehaviour
 
         private void Awake()
         {
-            // Prefer an explicit chest event if available
             var chest = GetComponent<SecretChest>();
             if (chest != null)
             {
-                chest.OnOpened += HandleOpened; // see tiny patch below
+                chest.OnOpened += HandleOpened;
             }
         }
 
@@ -1086,7 +1056,6 @@ public class DynamicQuestGenerator : MonoBehaviour
             TryMarkAvoided();
         }
 
-        // Fallback for the invisible token variant (trigger == “opened”)
         private void OnTriggerEnter(Collider other)
         {
             if (other.CompareTag("Player")) TryMarkAvoided();
@@ -1100,9 +1069,8 @@ public class DynamicQuestGenerator : MonoBehaviour
             bool anyAlive = enemies.Any(e => e != null && e.gameObject.activeInHierarchy);
             if (anyAlive)
             {
-                // Use your real tracker/field names here
                 var ps = PlayerStatsTracker.Instance;
-                if (ps != null) ps.fightsAvoided++;   // or PlayerActivity.FightsAvioded++;
+                if (ps != null) ps.fightsAvoided++;
             }
         }
     }

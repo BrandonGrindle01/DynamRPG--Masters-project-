@@ -5,8 +5,6 @@ public static class QuestBeacon
     public static GameObject CreateBeam(Transform target, float yStart, float height, float radius, float alpha, Material template)
     {
         if (!target) return null;
-
-        // Geometry: a thin cylinder (beam)
         var go = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
         go.name = "QuestBeacon";
         var col = go.GetComponent<Collider>(); if (col) Object.Destroy(col);
@@ -15,24 +13,19 @@ public static class QuestBeacon
         go.transform.position = target.position;
         go.transform.localScale = new Vector3(Mathf.Max(0.01f, radius * 2f), Mathf.Max(0.1f, height / 2f), Mathf.Max(0.01f, radius * 2f));
 
-        // Lift it so base sits at yStart
         var baseY = target.position.y + yStart;
         var halfH = Mathf.Max(0.1f, height / 2f);
         var pos = go.transform.position; pos.y = baseY + halfH; go.transform.position = pos;
 
-        // Material
         var mr = go.GetComponent<MeshRenderer>();
         var mat = template ? new Material(template) : CreateFallbackMaterial();
         if (mr) mr.material = mat;
 
-        // Ensure transparency
         EnforceTransparent(mat);
 
-        // Default color
         var c = new Color(0.2f, 0.95f, 1f, Mathf.Clamp01(alpha));
         SetColor(mat, c);
 
-        // Simple follower
         var follow = go.AddComponent<_BeaconFollow>();
         follow.target = target;
         follow.yStart = yStart;
@@ -49,7 +42,6 @@ public static class QuestBeacon
         SetColor(mr.material, c);
     }
 
-    // ---------- internals ----------
     private static void SetColor(Material m, Color c)
     {
         if (!m) return;

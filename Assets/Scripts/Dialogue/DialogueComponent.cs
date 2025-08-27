@@ -3,7 +3,7 @@ using UnityEngine;
 public class DialogueComponent : MonoBehaviour
 {
     [Header("Template (asset)")]
-    public DialogueDefinition definition;          // keep as the template only
+    public DialogueDefinition definition;          
 
     public string npcDisplayNameOverride = "";
     public bool autoStartOnInteract = true;
@@ -63,8 +63,6 @@ public class DialogueComponent : MonoBehaviour
         }
 
         if (!definition) return false;
-
-        // Build a CLONE; do NOT modify or replace the asset.
         var built = DialogueQuestBuilder.BuildForNPC(definition, this);
         if (string.IsNullOrEmpty(built.npcName))
             built.npcName = DialogueService.CleanName(NpcDisplayName);
